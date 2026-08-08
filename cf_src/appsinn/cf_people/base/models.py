@@ -415,14 +415,21 @@ class AbstractZone(AuditMixin):
         null=True,
         help_text=_("Optional short code, e.g. Z13. Unique within the branch."),
     )
+    address = models.CharField(
+        _("address"),
+        max_length=512,
+        blank=True,
+        help_text=_("Optional street / area address for this zone."),
+    )
     description = models.TextField(_("description"), blank=True)
-    coordinator = models.ForeignKey(
+    leader = models.ForeignKey(
         "cf_people.Member",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="coordinated_zones",
-        verbose_name=_("zonal coordinator"),
+        related_name="led_zones",
+        verbose_name=_("leader"),
+        help_text=_("Optional. Zone leader (member)."),
     )
     is_active = models.BooleanField(_("is active"), default=True)
 
@@ -520,6 +527,26 @@ class AbstractSubBranch(AuditMixin, ValidateOrgBranchMixin):
         help_text=_("Sub groups (cells / satellites) belong to a zone under the branch."),
     )
     name = models.CharField(_("name"), max_length=255)
+    code = models.CharField(
+        _("code"),
+        max_length=32,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text=_("Optional short code for this sub group (unique within the zone)."),
+    )
+    address = models.CharField(
+        _("address"),
+        max_length=512,
+        blank=True,
+        help_text=_("Optional street / meeting address for this sub group."),
+    )
+    location_provider = models.CharField(
+        _("location provider"),
+        max_length=255,
+        blank=True,
+        help_text=_("Optional. Who provides or hosts this sub group's location."),
+    )
     description = models.TextField(_("description"), blank=True)
     leader = models.ForeignKey(
         "cf_people.Member",
@@ -544,11 +571,22 @@ class AbstractSubBranch(AuditMixin, ValidateOrgBranchMixin):
         unique_together = ("zone", "name")
         verbose_name = _("sub group")
         verbose_name_plural = _("sub groups")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["zone", "code"],
+                condition=models.Q(code__isnull=False) & ~models.Q(code=""),
+                name="%(app_label)s_%(class)s_unique_zone_code",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.name} ({self.get_group_type_display()})"
 
     def clean(self) -> None:
+        if self.code is not None and not str(self.code).strip():
+            self.code = None
+        elif self.code is not None:
+            self.code = str(self.code).strip()
         if self.zone_id:
             # Align branch with zone for tenancy + integrity.
             if self.zone.branch_id and (
@@ -560,6 +598,10 @@ class AbstractSubBranch(AuditMixin, ValidateOrgBranchMixin):
             self._validate_org_branch_relation("leader")
 
     def save(self, *args, **kwargs):
+        if self.code is not None and not str(self.code).strip():
+            self.code = None
+        elif self.code is not None:
+            self.code = str(self.code).strip()
         if self.zone_id and self.zone.branch_id:
             self.branch_id = self.zone.branch_id
         super().save(*args, **kwargs)

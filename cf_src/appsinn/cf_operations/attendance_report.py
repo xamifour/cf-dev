@@ -6,7 +6,6 @@ Build Excel-style attendance sheets from AttendanceRecord + optional seat.
 Preview always uses a 5-week column layout. Each record’s seat counts go into
 the column matching ``record.week`` (default column 1 if week is blank).
 Zone name is taken from linked Zone FKs when present.
-Leader display uses the Member FK when set.
 """
 
 from __future__ import annotations
@@ -61,15 +60,6 @@ def _counts_active(cell: dict[str, int]) -> bool:
             "testimonies",
         )
     )
-
-
-def _leader_label(record) -> str:
-    getter = getattr(record, "get_leader_display", None)
-    if callable(getter):
-        return getter() or ""
-    if getattr(record, "leader_id", None):
-        return str(record.leader)
-    return ""
 
 
 def build_sheet_from_records(
@@ -130,54 +120,73 @@ def build_sheet_from_records(
     active_cells = 0
     months_seen: set[int] = set()
 
+    def _sort_code(r):
+        if hasattr(r, "get_display_code"):
+            return (r.get_display_code() or "").lower()
+        return (r.code or "").lower()
+
+    def _sort_centre(r):
+        if hasattr(r, "get_display_centre_name"):
+            return (r.get_display_centre_name() or "").lower()
+        return (r.centre_name or "").lower()
+
     ordered = sorted(
         records,
         key=lambda r: (
-            r.serial_number or 0,
-            (r.centre_name or "").lower(),
+            _sort_code(r),
+            _sort_centre(r),
             str(getattr(r, "pk", "")),
         ),
     )
 
     for record in ordered:
-        centre = record.centre_name or (
-            str(record.subgroup) if getattr(record, "subgroup_id", None) else ""
-        )
+        # Prefer stored overrides; fall back to scope (sub group → zone → branch → org).
+        if hasattr(record, "get_display_centre_name"):
+            code = record.get_display_code()
+            centre = record.get_display_centre_name()
+            leader_name = record.get_display_leader()
+            address = record.get_display_address()
+            phone = record.get_display_phone_number()
+            location_provider = record.get_display_location_provider()
+        else:
+            code = (record.code or "").strip()
+            centre = (record.centre_name or "").strip()
+            leader_name = (record.leader or "").strip()
+            address = (record.address or "").strip()
+            phone = (getattr(record, "phone_number", None) or "").strip()
+            location_provider = (
+                getattr(record, "location_provider", None) or ""
+            ).strip()
         zone_label = (
             record.zone.name if getattr(record, "zone_id", None) else ""
         )
-        leader_name = _leader_label(record)
-        location = record.location or ""
-        contact = record.contact or ""
         if getattr(record, "month", None):
             months_seen.add(int(record.month))
         key = (
-            record.serial_number or 0,
+            code.lower(),
             centre.lower(),
             leader_name.lower(),
-            location.lower(),
-            contact.lower(),
+            address.lower(),
+            phone.lower(),
             zone_label.lower(),
         )
         if key not in grouped:
             grouped[key] = {
-                "serial_number": record.serial_number,
+                "code": code,
                 "centre_name": centre,
                 "leader_name": leader_name,
-                "location": location,
-                "contact": contact,
+                "address": address,
+                "contact": phone,  # Excel CONTACT column ← phone_number
                 "zone_name": zone_label,
-                "location_provider": getattr(record, "location_provider", "") or "",
+                "location_provider": location_provider,
                 "weeks": [_empty_counts() for _ in range(5)],
                 "records": [],
             }
         row = grouped[key]
         if zone_label and not row["zone_name"]:
             row["zone_name"] = zone_label
-        if getattr(record, "location_provider", None) and not row.get(
-            "location_provider"
-        ):
-            row["location_provider"] = record.location_provider
+        if location_provider and not row.get("location_provider"):
+            row["location_provider"] = location_provider
         row["records"].append(record)
 
         seat = getattr(record, "seat", None)

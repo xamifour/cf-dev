@@ -47,10 +47,10 @@
           {% endfor %}
         </tr>
         <tr class="sheet-col-header">
-          <th>S/N</th>
+          <th>{% trans "CODE" %}</th>
           <th>{% trans "CENTRE NAME" %}</th>
           <th>{% trans "LEADER'S NAME" %}</th>
-          <th>{% trans "LOCATION" %}</th>
+          <th>{% trans "ADDRESS" %}</th>
           <th>{% trans "CONTACT" %}</th>
           {% for _ in attendance_sheet.week_labels %}
           <th title="Male Adult">MA</th>
@@ -67,10 +67,10 @@
       <tbody>
         {% for row in attendance_sheet.rows %}
         <tr class="{% cycle 'row-odd' 'row-even' %}">
-          <td class="num">{{ row.serial_number }}</td>
+          <td class="num">{{ row.code }}</td>
           <td class="text">{{ row.centre_name }}</td>
           <td class="text">{{ row.leader_name }}</td>
-          <td class="text" title="{{ row.location_provider }}">{{ row.location }}</td>
+          <td class="text" title="{{ row.location_provider }}">{{ row.address }}</td>
           <td class="text">{{ row.contact }}</td>
           {% for week in row.weeks %}
           <td class="num {% if not week.male_adults %}is-zero{% endif %}">{{ week.male_adults }}</td>

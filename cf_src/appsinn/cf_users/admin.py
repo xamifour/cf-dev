@@ -198,17 +198,18 @@ class BranchInline(admin.TabularInline):
     model = Branch
     extra = 0
     show_change_link = True
-    fields = ("name", "branch_type", "active", "is_default", "city", "country")
+    fields = ("name", "code", "branch_type", "active", "is_default", "city", "country")
 
 
 @admin.register(Organization)
 class OrganizationAdmin(MultitenantAdminMixin, BaseAdmin):
     form = OrganizationForm
-    list_display = ("name", "trade_name", "code", "city", "country", "is_active")
+    list_display = ("name", "trade_name", "code", "leader", "city", "country", "is_active")
     list_filter = ("is_active", "country")
     search_fields = ("name", "trade_name", "code", "email")
     prepopulated_fields = {}
     readonly_fields = ("code", "slug", "created_at", "modified_at")
+    autocomplete_fields = ("leader",)
     inlines = [BranchInline, OrganizationUserInline]
     fieldsets = (
         (
@@ -218,6 +219,7 @@ class OrganizationAdmin(MultitenantAdminMixin, BaseAdmin):
                     "name",
                     "trade_name",
                     "code",
+                    "leader",
                     "email",
                     "phone_number",
                     "url",
@@ -286,11 +288,20 @@ class BranchUserInline(admin.TabularInline):
 
 @admin.register(Branch)
 class BranchAdmin(MultitenantAdminMixin, BaseAdmin):
-    list_display = ("name", "organization", "branch_type", "active", "is_default", "city")
+    list_display = (
+        "name",
+        "code",
+        "organization",
+        "leader",
+        "branch_type",
+        "active",
+        "is_default",
+        "city",
+    )
     list_filter = (MultitenantOrgFilter, "branch_type", "active", "is_default")
-    search_fields = ("name", "organization__name", "city")
+    search_fields = ("name", "code", "organization__name", "city")
     readonly_fields = ("slug", "created_at", "modified_at")
-    autocomplete_fields = ("organization",)
+    autocomplete_fields = ("organization", "leader")
     inlines = [BranchUserInline]
     fieldsets = (
         (
@@ -299,6 +310,8 @@ class BranchAdmin(MultitenantAdminMixin, BaseAdmin):
                 "fields": (
                     "organization",
                     "name",
+                    "code",
+                    "leader",
                     "branch_type",
                     "active",
                     "is_default",

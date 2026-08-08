@@ -42,11 +42,13 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
             "week",
             "month",
             "attendance_at",
+            "code",
             "centre_name",
             "leader",
-            "location",
+            "address",
+            "phone_number",
             "location_provider",
-            "contact",
+            "fill_from_scope",
         )
         read_only_fields = ("id",)
 

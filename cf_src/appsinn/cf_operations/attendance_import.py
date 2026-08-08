@@ -172,7 +172,13 @@ def parse_attendance_workbook(file_obj: BinaryIO) -> dict:
             if not centre_name:
                 continue
 
-            serial = _as_int(_cell(ws, row, 1)) or (len(centres) + 1)
+            # Column A is optional code (legacy S/N); keep as text.
+            code_raw = _cell(ws, row, 1)
+            code = _as_str(code_raw)
+            if not code and code_raw is not None:
+                code = str(_as_int(code_raw) or "")
+            if not code:
+                code = str(len(centres) + 1)
             weeks = []
             for start_col in _WEEK_START_COLS:
                 stat = {}
@@ -183,11 +189,10 @@ def parse_attendance_workbook(file_obj: BinaryIO) -> dict:
                 weeks.append(stat)
             centres.append(
                 {
-                    "serial_number": serial,
+                    "code": code,
                     "centre_name": centre_name,
-                    "leader_name": _as_str(_cell(ws, row, 3)),
-                    "location": _as_str(_cell(ws, row, 4)),
-                    "contact": _as_str(_cell(ws, row, 5)),
+                    "leader": _as_str(_cell(ws, row, 3)),
+                    "address": _as_str(_cell(ws, row, 4)),
                     "weeks": weeks,
                 }
             )
@@ -219,34 +224,6 @@ def _resolve_zone(branch, zone_name: str):
         return zone
     # Tolerate "ZONE 13" vs "Zone 13 - Kasoa"
     return qs.filter(name__icontains=name).order_by("name").first()
-
-
-def _resolve_leader(branch, leader_name: str):
-    """Match a Member under the branch by display / user name when possible."""
-    if not leader_name or not branch:
-        return None
-    try:
-        from cf_people.models import Member
-    except Exception:  # noqa: BLE001
-        return None
-    name = leader_name.strip()
-    if not name:
-        return None
-    qs = Member.objects.filter(branch=branch).select_related("user")
-    # Exact first+last
-    parts = name.split()
-    if len(parts) >= 2:
-        first, last = parts[0], parts[-1]
-        hit = qs.filter(
-            user__first_name__iexact=first, user__last_name__iexact=last
-        ).first()
-        if hit:
-            return hit
-    # icontains on full name pieces
-    for m in qs[:200]:
-        if name.lower() in str(m).lower():
-            return m
-    return None
 
 
 @transaction.atomic
@@ -315,13 +292,7 @@ def import_attendance_from_excel(
             "records were imported without a zone link."
         )
 
-    unmatched_leaders: set[str] = set()
-
     for centre in parsed["centres"]:
-        leader = _resolve_leader(branch, centre.get("leader_name") or "")
-        if centre.get("leader_name") and leader is None:
-            unmatched_leaders.add(centre["leader_name"])
-
         filled_weeks = [
             (week_num, week_data)
             for week_num, week_data in enumerate(centre["weeks"], start=1)
@@ -332,11 +303,10 @@ def import_attendance_from_excel(
             event=event,
             branch=branch,
             zone=zone,
-            leader=leader,
-            serial_number=centre["serial_number"],
+            code=centre.get("code") or "",
             centre_name=centre["centre_name"],
-            location=centre["location"],
-            contact=centre["contact"],
+            leader=centre.get("leader") or "",
+            address=centre.get("address") or "",
             created_by=created_by,
             modified_by=created_by,
         )
@@ -364,13 +334,5 @@ def import_attendance_from_excel(
                 testimonies=week_data.get("testimonies", 0),
             )
             result.seats_created += 1
-
-    if unmatched_leaders:
-        sample = ", ".join(sorted(unmatched_leaders)[:5])
-        extra = "…" if len(unmatched_leaders) > 5 else ""
-        result.warnings.append(
-            f"Could not match leader name(s) to a Member ({sample}{extra}); "
-            "records were imported without a leader link. Link them on the record."
-        )
 
     return result

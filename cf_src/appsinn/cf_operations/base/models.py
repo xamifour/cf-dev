@@ -437,6 +437,16 @@ class AbstractAttendanceRecord(AuditMixin, ValidateOrgBranchMixin):
     Optional ``week`` (1–5) only labels which sheet column to use in the
     Excel-style preview — records are not pre-created for every week.
     Optional ``month`` / ``attendance_at`` label when the capture happened.
+
+    Sheet-row fields (code, centre name, leader, address, phone, location
+    provider) are **overrides**. Effective values fall back by scope:
+
+    * Sub group linked → sub group details
+    * Zone (no sub group) → zone details
+    * Branch only → branch details
+    * No branch/zone/sub group → organisation details
+
+    Tick ``fill_from_scope`` to snapshot those details into the override fields.
     Headcounts live on the related AttendanceSeat (0 or 1).
     """
 
@@ -535,49 +545,224 @@ class AbstractAttendanceRecord(AuditMixin, ValidateOrgBranchMixin):
         db_index=True,
         help_text=_("Optional. When this attendance was taken."),
     )
-    serial_number = models.PositiveIntegerField(_("S/N"), default=1)
+    code = models.CharField(
+        _("code"),
+        max_length=64,
+        blank=True,
+        default="",
+        help_text=_(
+            "Override. Leave blank to use code from sub group / zone / branch / "
+            "organisation (most specific linked scope). "
+            "Tick “fill from scope” to store that code here."
+        ),
+    )
     centre_name = models.CharField(
         _("centre name"),
         max_length=255,
         blank=True,
-        help_text=_("Cell / centre name as on the sheet (if not linked to a sub group)."),
+        help_text=_(
+            "Override. Leave blank to use name from sub group / zone / branch / "
+            "organisation (most specific linked scope). "
+            "Tick “fill from scope” to store that name here."
+        ),
     )
-    leader = models.ForeignKey(
-        "cf_people.Member",
-        on_delete=models.SET_NULL,
-        null=True,
+    leader = models.CharField(
+        _("leader"),
+        max_length=255,
         blank=True,
-        related_name="led_attendance_records",
-        verbose_name=_("leader"),
-        help_text=_("Optional. Cell / centre leader (member)."),
+        help_text=_(
+            "Override. Leave blank to use leader from sub group / zone / branch / "
+            "organisation. Tick “fill from scope” to store that name here."
+        ),
     )
-    location = models.CharField(_("location"), max_length=512, blank=True)
+    address = models.CharField(
+        _("address"),
+        max_length=512,
+        blank=True,
+        help_text=_(
+            "Override. Leave blank to use address from sub group / zone / branch / "
+            "organisation. Tick “fill from scope” to store that address here."
+        ),
+    )
+    phone_number = models.CharField(
+        _("phone number"),
+        max_length=64,
+        blank=True,
+        help_text=_(
+            "Override. Leave blank to use the scope leader’s phone number. "
+            "Tick “fill from scope” to store it here."
+        ),
+    )
     location_provider = models.CharField(
         _("location provider"),
         max_length=255,
         blank=True,
-        help_text=_("Optional. Who provided or hosts this location."),
+        help_text=_(
+            "Override. Leave blank to use the sub group’s location provider when "
+            "a sub group is linked. Tick “fill from scope” to store it here."
+        ),
     )
-    contact = models.CharField(_("contact"), max_length=64, blank=True)
+    fill_from_scope = models.BooleanField(
+        _("fill from scope"),
+        default=False,
+        help_text=_(
+            "When ticked, code, centre name, leader, address, phone number and "
+            "location provider are filled from the linked scope on save: "
+            "sub group if set, else zone, else branch, else organisation."
+        ),
+    )
 
     class Meta:
         abstract = True
-        ordering = ("-modified_at", "serial_number", "centre_name")
+        ordering = ("-modified_at", "code", "centre_name")
 
     def __str__(self) -> str:
-        label = self.centre_name or (
-            str(self.subgroup) if self.subgroup_id else ""
-        ) or (str(self.zone) if self.zone_id else "")
+        label = self.get_display_centre_name()
         event_title = getattr(self.event, "title", None) or _("Event")
         week_bit = f" · W{self.week}" if self.week else ""
         if label:
             return f"{event_title} · {label}{week_bit}"
-        return f"{event_title} · {self.serial_number}{week_bit}"
+        code_bit = self.get_display_code()
+        return f"{event_title} · {code_bit}{week_bit}".strip(" ·")
 
-    def get_leader_display(self) -> str:
-        if self.leader_id:
-            return str(self.leader)
-        return ""
+    # ------------------------------------------------------------------
+    # Scope hierarchy: Sub group > Zone > Branch > Organisation
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _member_display_name(member) -> str:
+        if member is None:
+            return ""
+        return str(member).strip()
+
+    @staticmethod
+    def _member_phone(member) -> str:
+        if member is None:
+            return ""
+        user = getattr(member, "user", None)
+        phone = getattr(user, "phone_number", None) if user is not None else None
+        if phone is None:
+            return ""
+        return str(phone).strip()
+
+    def get_scope_level(self) -> str:
+        """
+        Return which scope level drives defaults.
+
+        ``subgroup`` | ``zone`` | ``branch`` | ``organization``
+        """
+        if self.subgroup_id:
+            return "subgroup"
+        if self.zone_id:
+            return "zone"
+        if self.branch_id:
+            return "branch"
+        return "organization"
+
+    def get_scope_defaults(self) -> dict[str, str]:
+        """
+        Defaults from the most specific linked scope (notes 1–4).
+
+        Does not read override fields — only linked org/branch/zone/subgroup.
+        """
+        level = self.get_scope_level()
+        code = ""
+        centre = ""
+        leader_name = ""
+        address = ""
+        phone = ""
+        location_provider = ""
+
+        if level == "subgroup" and self.subgroup_id:
+            sg = self.subgroup
+            code = (getattr(sg, "code", None) or "").strip()
+            centre = (sg.name or "").strip()
+            leader_name = self._member_display_name(getattr(sg, "leader", None))
+            address = (getattr(sg, "address", None) or "").strip()
+            phone = self._member_phone(getattr(sg, "leader", None))
+            location_provider = (getattr(sg, "location_provider", None) or "").strip()
+        elif level == "zone" and self.zone_id:
+            zone = self.zone
+            code = (getattr(zone, "code", None) or "").strip()
+            centre = (zone.name or "").strip()
+            leader_name = self._member_display_name(getattr(zone, "leader", None))
+            address = (getattr(zone, "address", None) or "").strip()
+            phone = self._member_phone(getattr(zone, "leader", None))
+        elif level == "branch" and self.branch_id:
+            branch = self.branch
+            code = (getattr(branch, "code", None) or "").strip()
+            centre = (branch.name or "").strip()
+            leader_name = self._member_display_name(getattr(branch, "leader", None))
+            address = (getattr(branch, "address", None) or "").strip()
+            phone = self._member_phone(getattr(branch, "leader", None))
+        else:
+            org = None
+            if self.branch_id:
+                org = getattr(self.branch, "organization", None)
+            if org is None and self.event_id:
+                event_branch = getattr(self.event, "branch", None)
+                if event_branch is not None:
+                    org = getattr(event_branch, "organization", None)
+            if org is not None:
+                code = (getattr(org, "code", None) or "").strip()
+                centre = (
+                    (getattr(org, "trade_name", None) or "") or (org.name or "")
+                ).strip()
+                leader_name = self._member_display_name(getattr(org, "leader", None))
+                address = (getattr(org, "address", None) or "").strip()
+                phone = self._member_phone(getattr(org, "leader", None))
+
+        return {
+            "code": code,
+            "centre_name": centre,
+            "leader": leader_name,
+            "address": address,
+            "phone_number": phone,
+            "location_provider": location_provider,
+            "scope_level": level,
+        }
+
+    def apply_scope_defaults(self) -> None:
+        """Write scope defaults into override fields (checkbox behaviour)."""
+        defaults = self.get_scope_defaults()
+        self.code = defaults["code"]
+        self.centre_name = defaults["centre_name"]
+        self.leader = defaults["leader"]
+        self.address = defaults["address"]
+        self.phone_number = defaults["phone_number"]
+        self.location_provider = defaults["location_provider"]
+
+    def get_display_code(self) -> str:
+        """Override if set, else scope default."""
+        if (self.code or "").strip():
+            return self.code.strip()
+        return self.get_scope_defaults()["code"]
+
+    def get_display_centre_name(self) -> str:
+        """Override if set, else scope default."""
+        if (self.centre_name or "").strip():
+            return self.centre_name.strip()
+        return self.get_scope_defaults()["centre_name"]
+
+    def get_display_leader(self) -> str:
+        if (self.leader or "").strip():
+            return self.leader.strip()
+        return self.get_scope_defaults()["leader"]
+
+    def get_display_address(self) -> str:
+        if (self.address or "").strip():
+            return self.address.strip()
+        return self.get_scope_defaults()["address"]
+
+    def get_display_phone_number(self) -> str:
+        if (self.phone_number or "").strip():
+            return self.phone_number.strip()
+        return self.get_scope_defaults()["phone_number"]
+
+    def get_display_location_provider(self) -> str:
+        if (self.location_provider or "").strip():
+            return self.location_provider.strip()
+        return self.get_scope_defaults()["location_provider"]
 
     def clean(self) -> None:
         if self.event_id and self.branch_id:
@@ -628,16 +813,6 @@ class AbstractAttendanceRecord(AuditMixin, ValidateOrgBranchMixin):
                     }
                 )
             self._validate_org_branch_relation("subgroup")
-        if self.leader_id:
-            if self.branch_id and self.leader.branch_id != self.branch_id:
-                raise ValidationError(
-                    {"leader": _("Leader must belong to the same branch.")}
-                )
-            self._validate_org_branch_relation("leader")
-        if self.subgroup_id and not (self.centre_name or "").strip():
-            self.centre_name = self.subgroup.name
-        # If month blank but attendance_at set, leave month for staff to set
-        # (or they may set month without a precise datetime).
 
     def save(self, *args, **kwargs):
         if self.session_id and not self.event_id:
@@ -646,8 +821,9 @@ class AbstractAttendanceRecord(AuditMixin, ValidateOrgBranchMixin):
             self.branch_id = self.event.branch_id
         if self.subgroup_id and not self.zone_id:
             self.zone_id = self.subgroup.zone_id
-        if self.subgroup_id and not (self.centre_name or "").strip():
-            self.centre_name = self.subgroup.name
+        if self.fill_from_scope:
+            # Ensure relations needed for defaults are available when only IDs set.
+            self.apply_scope_defaults()
         super().save(*args, **kwargs)
 
 

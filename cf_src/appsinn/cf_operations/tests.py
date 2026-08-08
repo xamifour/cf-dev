@@ -195,11 +195,11 @@ class AttendanceExcelModelTests(OperationsFixturesMixin, TestCase):
             branch=self.branch,
             week=1,
             month=6,
-            serial_number=1,
+            code="1",
             centre_name="His Presence",
-            location="Iron City 18 Soursop Street",
+            leader="Mrs. Star Innocent Adukwu",
+            address="Iron City 18 Soursop Street",
             location_provider="Cell host",
-            contact="+233543053095",
         )
         # No auto-created weeks 1–5; seat is optional and created on demand.
         self.assertFalse(hasattr(record, "week_stats"))
@@ -229,10 +229,10 @@ class AttendanceExcelModelTests(OperationsFixturesMixin, TestCase):
             branch=self.branch,
             week=1,
             month=6,
-            serial_number=1,
+            code="1",
             centre_name="His Presence",
-            location="Loc A",
-            contact="111",
+            leader="Leader A",
+            address="Loc A",
         )
         AttendanceSeat.objects.create(
             record=r1,
@@ -278,7 +278,7 @@ class AttendanceExcelModelTests(OperationsFixturesMixin, TestCase):
             branch=self.branch,
             zone=zone,
             week=2,
-            serial_number=1,
+            code="1",
             centre_name="Cell A",
         )
         AttendanceSeat.objects.create(
@@ -306,29 +306,23 @@ class AttendanceExcelModelTests(OperationsFixturesMixin, TestCase):
             branch=self.branch,
             zone=zone,
             subgroup=cell,
-            serial_number=1,
+            code="1",
         )
         self.assertEqual(rec.event_id, event.pk)
         self.assertEqual(rec.zone_id, zone.pk)
         self.assertEqual(rec.subgroup_id, cell.pk)
-        self.assertEqual(rec.centre_name, "His Presence")
+        # Without fill_from_scope, override stays blank; display falls back to sub group.
+        self.assertEqual(rec.centre_name, "")
+        self.assertEqual(rec.get_display_centre_name(), "His Presence")
         self.assertIsNone(rec.week)
 
-    def test_attendance_month_datetime_leader_fk(self):
+    def test_attendance_month_datetime_leader_text(self):
         from datetime import datetime
 
         from django.utils import timezone as dj_tz
 
-        from cf_people.models import Member
-
         event = Event.objects.create(
             branch=self.branch, title="Month check", event_type="SERVICE"
-        )
-        leader = Member.objects.create(
-            branch=self.branch,
-            organization=self.org,
-            user=self.user,
-            membership_status="ACTIVE",
         )
         when = dj_tz.make_aware(datetime(2026, 6, 15, 9, 30))
         rec = AttendanceRecord.objects.create(
@@ -337,28 +331,144 @@ class AttendanceExcelModelTests(OperationsFixturesMixin, TestCase):
             week=2,
             month=6,
             attendance_at=when,
-            leader=leader,
+            code="C-01",
+            leader="Deacon Host",
             centre_name="Cell One",
-            location="Hall A",
-            location_provider="Deacon Host",
+            address="Hall A",
+            phone_number="+233201111111",
+            location_provider="Host Family",
         )
         rec.full_clean()
         self.assertEqual(rec.get_month_display(), "June")
-        self.assertEqual(rec.get_leader_display(), str(leader))
-        self.assertEqual(rec.location_provider, "Deacon Host")
+        self.assertEqual(rec.leader, "Deacon Host")
+        self.assertEqual(rec.location_provider, "Host Family")
         self.assertEqual(rec.attendance_at, when)
+        self.assertEqual(rec.address, "Hall A")
+        self.assertEqual(rec.phone_number, "+233201111111")
 
         from .attendance_report import build_sheet_from_records
 
         AttendanceSeat.objects.create(record=rec, male_adults=2, female_adults=3)
         sheet = build_sheet_from_records(
-            AttendanceRecord.objects.filter(pk=rec.pk).select_related(
-                "leader", "leader__user", "seat", "zone"
-            )
+            AttendanceRecord.objects.filter(pk=rec.pk).select_related("seat", "zone")
         )
-        self.assertEqual(sheet["rows"][0]["leader_name"], str(leader))
+        self.assertEqual(sheet["rows"][0]["leader_name"], "Deacon Host")
+        self.assertEqual(sheet["rows"][0]["address"], "Hall A")
+        self.assertEqual(sheet["rows"][0]["contact"], "+233201111111")
+        self.assertEqual(sheet["rows"][0]["code"], "C-01")
         self.assertEqual(sheet["rows"][0]["weeks"][1]["total"], 5)
         self.assertEqual(sheet["month_label"], "June")
+
+    def test_fill_from_scope_hierarchy(self):
+        from cf_people.models import Member, SubBranch, Zone
+
+        event = Event.objects.create(
+            branch=self.branch, title="Scope fill", event_type="SERVICE"
+        )
+        # Branch-level leader + address
+        branch_leader = Member.objects.create(
+            branch=self.branch,
+            organization=self.org,
+            user=self.user,
+            membership_status="ACTIVE",
+        )
+        self.branch.leader = branch_leader
+        self.branch.address = "Branch Street 1"
+        self.branch.save()
+
+        # Branch only → branch details
+        self.branch.code = "BR01"
+        self.branch.save(update_fields=["code", "leader", "address"])
+
+        rec_branch = AttendanceRecord(
+            event=event,
+            branch=self.branch,
+            fill_from_scope=True,
+        )
+        rec_branch.save()
+        rec_branch.refresh_from_db()
+        self.assertEqual(rec_branch.get_scope_level(), "branch")
+        self.assertEqual(rec_branch.code, "BR01")
+        self.assertEqual(rec_branch.centre_name, self.branch.name)
+        self.assertEqual(rec_branch.leader, str(branch_leader))
+        self.assertEqual(rec_branch.address, "Branch Street 1")
+        self.assertEqual(
+            rec_branch.phone_number, str(self.user.phone_number)
+        )
+
+        # Zone overrides branch
+        zone = Zone.objects.create(
+            branch=self.branch,
+            name="ZONE 7",
+            code="Z7",
+            address="Zone Road 7",
+            leader=branch_leader,
+        )
+        rec_zone = AttendanceRecord(
+            event=event,
+            branch=self.branch,
+            zone=zone,
+            fill_from_scope=True,
+        )
+        rec_zone.save()
+        rec_zone.refresh_from_db()
+        self.assertEqual(rec_zone.get_scope_level(), "zone")
+        self.assertEqual(rec_zone.code, "Z7")
+        self.assertEqual(rec_zone.centre_name, "ZONE 7")
+        self.assertEqual(rec_zone.address, "Zone Road 7")
+
+        # Sub group overrides zone
+        cell = SubBranch.objects.create(
+            zone=zone,
+            branch=self.branch,
+            name="Grace Cell",
+            code="CELL-3",
+            group_type="CELL",
+            address="Cell Lane 3",
+            location_provider="Sister Ama",
+            leader=branch_leader,
+        )
+        rec_cell = AttendanceRecord(
+            event=event,
+            branch=self.branch,
+            zone=zone,
+            subgroup=cell,
+            fill_from_scope=True,
+        )
+        rec_cell.save()
+        rec_cell.refresh_from_db()
+        self.assertEqual(rec_cell.get_scope_level(), "subgroup")
+        self.assertEqual(rec_cell.code, "CELL-3")
+        self.assertEqual(rec_cell.centre_name, "Grace Cell")
+        self.assertEqual(rec_cell.address, "Cell Lane 3")
+        self.assertEqual(rec_cell.location_provider, "Sister Ama")
+
+        # Manual override wins over scope defaults when fill_from_scope is off
+        rec_override = AttendanceRecord.objects.create(
+            event=event,
+            branch=self.branch,
+            zone=zone,
+            subgroup=cell,
+            code="CUSTOM",
+            centre_name="Custom Centre",
+            leader="Custom Leader",
+            fill_from_scope=False,
+        )
+        self.assertEqual(rec_override.get_display_code(), "CUSTOM")
+        self.assertEqual(rec_override.get_display_centre_name(), "Custom Centre")
+        self.assertEqual(rec_override.get_display_leader(), "Custom Leader")
+        # Empty address falls back to sub group
+        self.assertEqual(rec_override.get_display_address(), "Cell Lane 3")
+        # Empty code on another record falls back to sub group code
+        rec_blank_code = AttendanceRecord.objects.create(
+            event=event,
+            branch=self.branch,
+            zone=zone,
+            subgroup=cell,
+            fill_from_scope=False,
+        )
+        self.assertEqual(rec_blank_code.code, "")
+        self.assertEqual(rec_blank_code.get_display_code(), "CELL-3")
 
     def test_event_session_and_attendance_link(self):
         event = Event.objects.create(

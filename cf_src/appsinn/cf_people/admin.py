@@ -177,7 +177,7 @@ class SubBranchInline(admin.TabularInline):
     model = SubBranch
     form = SubBranchInlineForm
     extra = 1
-    fields = ("name", "group_type", "leader", "is_active")
+    fields = ("name", "code", "group_type", "leader", "address", "location_provider", "is_active")
     autocomplete_fields = ("leader",)
     show_change_link = True
     ordering = ("-modified_at", "name")
@@ -206,19 +206,19 @@ class SubBranchInline(admin.TabularInline):
 
 @admin.register(Zone)
 class ZoneAdmin(MultitenantAdminMixin, BaseAdmin):
-    list_display = ("name", "code", "branch", "coordinator", "is_active")
+    list_display = ("name", "code", "branch", "leader", "is_active")
     list_filter = (MultitenantBranchFilter, "is_active")
-    search_fields = ("name", "code", "description")
-    autocomplete_fields = ("branch", "coordinator")
+    search_fields = ("name", "code", "address", "description")
+    autocomplete_fields = ("branch", "leader")
     inlines = [SubBranchInline]
     fieldsets = (
         (
             None,
-            {"fields": ("branch", "name", "code", "is_active")},
+            {"fields": ("branch", "name", "code", "address", "is_active")},
         ),
         (
             _("Leadership"),
-            {"fields": ("coordinator", "description")},
+            {"fields": ("leader", "description")},
         ),
     )
 
@@ -240,9 +240,17 @@ class ZoneAdmin(MultitenantAdminMixin, BaseAdmin):
 class SubBranchAdmin(MultitenantAdminMixin, BaseAdmin):
     form = SubBranchAdminForm
     multitenant_shared_relations = ["zone", "leader"]
-    list_display = ("name", "group_type", "zone", "branch", "leader", "is_active")
+    list_display = (
+        "name",
+        "code",
+        "group_type",
+        "zone",
+        "branch",
+        "leader",
+        "is_active",
+    )
     list_filter = (MultitenantBranchFilter, "group_type", "is_active")
-    search_fields = ("name", "zone__name", "description")
+    search_fields = ("name", "code", "zone__name", "address", "description")
     # Branch is derived from zone — do not show it as an editable choice field.
     autocomplete_fields = ("zone", "leader")
     readonly_fields = ("branch",)
@@ -254,8 +262,11 @@ class SubBranchAdmin(MultitenantAdminMixin, BaseAdmin):
                     "zone",
                     "branch",
                     "name",
+                    "code",
                     "group_type",
                     "leader",
+                    "address",
+                    "location_provider",
                     "is_active",
                     "description",
                 ),

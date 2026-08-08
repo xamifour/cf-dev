@@ -264,10 +264,9 @@ class AttendanceRecordAdmin(MultitenantAdminMixin, BaseAdmin):
         "session",
         "zone",
         "subgroup",
-        "leader",
     ]
     list_display = (
-        "serial_number",
+        "code",
         "event",
         "session",
         "week",
@@ -288,17 +287,16 @@ class AttendanceRecordAdmin(MultitenantAdminMixin, BaseAdmin):
         "zone",
     )
     search_fields = (
+        "code",
         "centre_name",
-        "location",
+        "leader",
+        "address",
+        "phone_number",
         "location_provider",
-        "contact",
         "event__title",
         "session__name",
         "zone__name",
         "subgroup__name",
-        "leader__member_number",
-        "leader__user__first_name",
-        "leader__user__last_name",
     )
     autocomplete_fields = (
         "event",
@@ -306,7 +304,6 @@ class AttendanceRecordAdmin(MultitenantAdminMixin, BaseAdmin):
         "branch",
         "zone",
         "subgroup",
-        "leader",
     )
     readonly_fields = (
         "created_at",
@@ -315,7 +312,7 @@ class AttendanceRecordAdmin(MultitenantAdminMixin, BaseAdmin):
         "modified_by",
     )
     inlines = [AttendanceSeatInline]
-    ordering = ("-modified_at", "serial_number")
+    ordering = ("-modified_at", "code")
     change_list_template = "admin/cf_operations/attendancerecord/change_list.html"
     date_hierarchy = "attendance_at"
     fieldsets = (
@@ -343,16 +340,25 @@ class AttendanceRecordAdmin(MultitenantAdminMixin, BaseAdmin):
             },
         ),
         (
-            _("Centre / sheet row"),
+            _("Centre / sheet row (overrides)"),
             {
                 "fields": (
-                    "serial_number",
+                    "fill_from_scope",
+                    "code",
                     "centre_name",
                     "leader",
-                    "location",
+                    "address",
+                    "phone_number",
                     "location_provider",
-                    "contact",
-                )
+                ),
+                "description": _(
+                    "These fields override scope defaults for the sheet. "
+                    "Leave blank to use: sub group (if linked), else zone, "
+                    "else branch, else organisation. "
+                    "Tick “fill from scope” and save to copy those values into "
+                    "the fields (code, centre name, leader, address, phone of "
+                    "the scope leader, location provider)."
+                ),
             },
         ),
         (
@@ -445,12 +451,18 @@ class AttendanceRecordAdmin(MultitenantAdminMixin, BaseAdmin):
         qs = self.get_queryset(request).select_related(
             "branch",
             "branch__organization",
+            "branch__organization__leader",
+            "branch__organization__leader__user",
+            "branch__leader",
+            "branch__leader__user",
             "event",
             "session",
             "zone",
+            "zone__leader",
+            "zone__leader__user",
             "subgroup",
-            "leader",
-            "leader__user",
+            "subgroup__leader",
+            "subgroup__leader__user",
             "seat",
         )
         if filters["branch"]:

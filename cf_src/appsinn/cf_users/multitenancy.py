@@ -190,30 +190,30 @@ class MultitenantAdminMixin:
     def _restrict_form_fields(self, request, form):
         if not hasattr(form, "base_fields"):
             return
+        if request.user.is_superuser:
+            return
         fields = form.base_fields
         user = request.user
         from .tenancy import (  # noqa: PLC0415
             accessible_branch_ids_qs,
-            managed_organization_ids_qs,
             organizations_for_user_qs,
+            users_visible_to_user_qs,
         )
 
         org_field = fields.get("organization")
         if org_field and isinstance(org_field, forms.ModelChoiceField):
-            if user.is_superuser:
-                org_field.queryset = org_field.queryset.filter(is_active=True)
-            else:
-                org_field.queryset = organizations_for_user_qs(user)
-                org_field.required = True
+            org_field.queryset = organizations_for_user_qs(user)
+            org_field.required = True
 
         branch_field = fields.get("branch")
         if branch_field and isinstance(branch_field, forms.ModelChoiceField):
-            if user.is_superuser:
-                branch_field.queryset = branch_field.queryset.filter(active=True)
-            else:
-                branch_field.queryset = branch_field.queryset.filter(
-                    id__in=accessible_branch_ids_qs(user)
-                )
+            branch_field.queryset = branch_field.queryset.filter(
+                id__in=accessible_branch_ids_qs(user)
+            )
+
+        user_field = fields.get("user")
+        if user_field and isinstance(user_field, forms.ModelChoiceField):
+            user_field.queryset = users_visible_to_user_qs(user)
 
         for rel_name in self.multitenant_shared_relations:
             field = fields.get(rel_name)

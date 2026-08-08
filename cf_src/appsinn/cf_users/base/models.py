@@ -447,6 +447,15 @@ class AbstractOrganization(AutoIncrementCodeMixin, AuditMixin):
         help_text=_("Hex colour code, e.g. #4A90D9."),
     )
     notes = models.TextField(_("notes"), blank=True, null=True)
+    leader = models.ForeignKey(
+        "cf_people.Member",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="led_organizations",
+        verbose_name=_("leader"),
+        help_text=_("Optional. Organisation-level leader (member)."),
+    )
     notifications_enabled = models.BooleanField(_("notifications enabled"), default=True)
     birthday_greetings_enabled = models.BooleanField(
         _("birthday greetings enabled"),
@@ -626,6 +635,14 @@ class AbstractBranch(AuditMixin):
         _("branch type"), max_length=10, choices=TYPE_CHOICES, default="CHILD"
     )
     name = models.CharField(_("name"), max_length=128, db_index=True)
+    code = models.CharField(
+        _("code"),
+        max_length=32,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text=_("Optional short code for this branch (unique within the organisation)."),
+    )
     slug = models.SlugField(
         _("slug"), max_length=128, blank=True, null=True, unique=True, editable=False
     )
@@ -635,6 +652,15 @@ class AbstractBranch(AuditMixin):
         _("is default"),
         default=False,
         help_text=_("Only one branch per organisation may be the default."),
+    )
+    leader = models.ForeignKey(
+        "cf_people.Member",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="led_branches",
+        verbose_name=_("leader"),
+        help_text=_("Optional. Branch leader (member)."),
     )
     address = models.CharField(_("address"), max_length=256)
     city = models.CharField(_("city"), max_length=64, db_index=True)
@@ -679,13 +705,41 @@ class AbstractBranch(AuditMixin):
                 fields=["organization", "is_default"],
                 condition=models.Q(is_default=True),
                 name="%(app_label)s_%(class)s_unique_default_branch",
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["organization", "code"],
+                condition=models.Q(code__isnull=False) & ~models.Q(code=""),
+                name="%(app_label)s_%(class)s_unique_org_code",
+            ),
         ]
 
     def __str__(self) -> str:
         return self.name
 
+    def clean(self) -> None:
+        super().clean()
+        if self.code is not None and not str(self.code).strip():
+            self.code = None
+        elif self.code is not None:
+            self.code = str(self.code).strip()
+        if self.leader_id and self.organization_id:
+            if getattr(self.leader, "organization_id", None) not in (
+                None,
+                self.organization_id,
+            ):
+                raise ValidationError(
+                    {
+                        "leader": _(
+                            "Leader must belong to the same organisation as this branch."
+                        )
+                    }
+                )
+
     def save(self, *args, **kwargs):
+        if self.code is not None and not str(self.code).strip():
+            self.code = None
+        elif self.code is not None:
+            self.code = str(self.code).strip()
         if not self.slug:
             base = f"{self.organization_id}-{self.name}" if self.organization_id else self.name
             self.slug = unique_slug(self, value=base)
