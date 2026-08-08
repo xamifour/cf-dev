@@ -1,0 +1,540 @@
+{# cf-dev/cf_src/templates/cf_users/portal/dashboard.html #}
+{% extends "cf_users/portal/base.html" %}
+{% load i18n static %}
+
+{% block body_class %}portal portal-app c-home{% endblock %}
+
+{% block extra_head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+{# ── Coursera-style top navigation ── #}
+<header class="c-nav" role="banner" data-c-nav>
+  <div class="c-nav-inner">
+    <a class="c-logo" href="{% url 'portal_dashboard' %}" aria-label="CF Home">
+      <span class="c-logo-mark">CF</span>
+      <span class="c-logo-text">CF</span>
+    </a>
+
+    <nav class="c-nav-links" id="c-primary-nav" aria-label="{% trans 'Primary' %}">
+      <a class="is-active" href="{% url 'portal_dashboard' %}">{% trans "Home" %}</a>
+      <a href="#organisations">{% trans "Organisations" %}</a>
+      <a href="#branches">{% trans "Branches" %}</a>
+
+      <div class="c-explore" data-c-explore>
+        <button
+          type="button"
+          class="c-explore-trigger"
+          id="c-explore-trigger"
+          aria-expanded="false"
+          aria-controls="c-explore-panel"
+          data-c-explore-trigger
+        >
+          {% trans "Explore" %}
+          <svg class="c-explore-chevron" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M6 9l6 6 6-6"></path>
+          </svg>
+        </button>
+      </div>
+    </nav>
+
+    <div class="c-nav-search" role="search">
+      <svg class="c-search-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="7"></circle>
+        <path d="M20 20l-3.5-3.5"></path>
+      </svg>
+      <input
+        type="search"
+        class="c-search-input"
+        placeholder="{% trans 'What do you want to manage today?' %}"
+        aria-label="{% trans 'Search organisations and branches' %}"
+        disabled
+      >
+    </div>
+
+    <div class="c-nav-actions c-nav-actions-desktop">
+      {% if tenant_organizations %}
+      <form method="post" action="{% url 'portal_switch_organization' %}" class="c-tenant-form">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <label class="c-sr-only" for="id_nav_org">{% trans "Organisation" %}</label>
+        <select name="organization_id" id="id_nav_org" class="c-tenant-select" onchange="this.form.submit()">
+          {% for org in tenant_organizations %}
+          <option value="{{ org.pk }}" {% if active_organization and org.pk == active_organization.pk %}selected{% endif %}>{{ org }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      {% endif %}
+      {% if tenant_branches %}
+      <form method="post" action="{% url 'portal_switch_branch' %}" class="c-tenant-form">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <label class="c-sr-only" for="id_nav_branch">{% trans "Branch" %}</label>
+        <select name="branch_id" id="id_nav_branch" class="c-tenant-select" onchange="this.form.submit()">
+          {% for b in tenant_branches %}
+          <option value="{{ b.pk }}" {% if active_branch and b.pk == active_branch.pk %}selected{% endif %}>{{ b.name }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      {% endif %}
+      {% if is_staff_user %}
+      <a class="c-link-quiet" href="{% url 'admin:index' %}">{% trans "Admin" %}</a>
+      {% endif %}
+      <div class="c-user-chip" title="{{ user.email }}">
+        <span class="c-avatar" aria-hidden="true">
+          {{ user.first_name|default:user.username|slice:":1"|upper }}
+        </span>
+        <span class="c-user-name">{{ user.get_full_name|default:user.username }}</span>
+      </div>
+      <form method="post" action="{% url 'portal_logout' %}" class="inline-form">
+        {% csrf_token %}
+        <button type="submit" class="c-btn c-btn-ghost">{% trans "Log out" %}</button>
+      </form>
+    </div>
+
+    <button
+      type="button"
+      class="c-menu-toggle"
+      id="c-menu-toggle"
+      aria-expanded="false"
+      aria-controls="c-mobile-drawer"
+      data-c-menu-toggle
+      aria-label="{% trans 'Open menu' %}"
+    >
+      <span class="c-menu-bar" aria-hidden="true"></span>
+      <span class="c-menu-bar" aria-hidden="true"></span>
+      <span class="c-menu-bar" aria-hidden="true"></span>
+    </button>
+  </div>
+
+  {# Full-width Explore mega menu #}
+  <div
+    class="c-explore-panel"
+    id="c-explore-panel"
+    role="region"
+    aria-label="{% trans 'Explore menu' %}"
+    hidden
+    data-c-explore-panel
+  >
+    <div class="c-explore-panel-inner">
+      <div class="c-explore-col">
+        <h3>{% trans "Gatherings & worship" %}</h3>
+        <ul>
+          <li><a href="{% url 'cf_operations:event_list' %}">{% trans "Events" %}</a></li>
+          <li><a href="{% url 'cf_operations:sermon_list' %}">{% trans "Sermons" %}</a></li>
+          <li><a href="{% url 'cf_operations:outreach_list' %}">{% trans "Outreaches" %}</a></li>
+          <li><a href="{% url 'cf_operations:event_list' %}?type=CAMP">{% trans "Camps" %}</a></li>
+        </ul>
+      </div>
+      <div class="c-explore-col">
+        <h3>{% trans "Growth & learning" %}</h3>
+        <ul>
+          <li><a href="#explore-training">{% trans "Training programs" %}</a></li>
+          <li><a href="#explore-news">{% trans "News" %}</a></li>
+          <li><a href="#organisations">{% trans "Organisations" %}</a></li>
+          <li><a href="#branches">{% trans "Branches" %}</a></li>
+        </ul>
+      </div>
+      <div class="c-explore-col">
+        <h3>{% trans "People & care" %}</h3>
+        <ul>
+          <li><a href="#explore-people">{% trans "Members & visitors" %}</a></li>
+          <li><a href="#explore-followups">{% trans "Follow-ups" %}</a></li>
+          <li><a href="#explore-departments">{% trans "Departments" %}</a></li>
+          <li><a href="#explore-cell-groups">{% trans "Cell groups" %}</a></li>
+        </ul>
+      </div>
+      <div class="c-explore-col c-explore-featured">
+        <h3>{% trans "Quick start" %}</h3>
+        <p>{% trans "Browse ministry areas across every organisation and branch you can access." %}</p>
+        <a class="c-btn c-btn-primary c-btn-sm" href="#explore">{% trans "View all topics" %}</a>
+      </div>
+    </div>
+  </div>
+
+  {# Mobile sheet: search + links + account (above backdrop) #}
+  <div class="c-nav-backdrop" data-c-nav-backdrop hidden tabindex="-1"></div>
+  <div
+    class="c-mobile-drawer"
+    id="c-mobile-drawer"
+    role="dialog"
+    aria-modal="true"
+    aria-label="{% trans 'Menu' %}"
+    hidden
+    data-c-mobile-drawer
+  >
+    <div class="c-mobile-drawer-scroll">
+      <div class="c-mobile-search" role="search">
+        <svg class="c-search-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="M20 20l-3.5-3.5"></path>
+        </svg>
+        <input
+          type="search"
+          class="c-search-input c-mobile-search-input"
+          placeholder="{% trans 'Search organisations and branches' %}"
+          aria-label="{% trans 'Search organisations and branches' %}"
+          data-c-mobile-search
+          autocomplete="off"
+        >
+      </div>
+
+      <nav class="c-mobile-nav" aria-label="{% trans 'Mobile primary' %}">
+        <a href="{% url 'portal_dashboard' %}" data-c-close-menu>{% trans "Home" %}</a>
+        <a href="#organisations" data-c-close-menu data-c-search-label="{% trans 'Organisations' %}">{% trans "Organisations" %}</a>
+        <a href="#branches" data-c-close-menu data-c-search-label="{% trans 'Branches' %}">{% trans "Branches" %}</a>
+        <p class="c-mobile-section-label">{% trans "Explore" %}</p>
+        <a href="{% url 'cf_operations:event_list' %}" data-c-close-menu data-c-search-label="{% trans 'Events' %}">{% trans "Events" %}</a>
+        <a href="{% url 'cf_operations:event_list' %}?type=TRAINING" data-c-close-menu data-c-search-label="{% trans 'Training programs' %}">{% trans "Training programs" %}</a>
+        <a href="{% url 'cf_operations:sermon_list' %}" data-c-close-menu data-c-search-label="{% trans 'Sermons' %}">{% trans "Sermons" %}</a>
+        <a href="{% url 'cf_operations:outreach_list' %}" data-c-close-menu data-c-search-label="{% trans 'Outreaches' %}">{% trans "Outreaches" %}</a>
+        <a href="{% url 'cf_operations:event_list' %}?type=CAMP" data-c-close-menu data-c-search-label="{% trans 'Camps' %}">{% trans "Camps" %}</a>
+        <a href="#explore-news" data-c-close-menu data-c-search-label="{% trans 'News' %}">{% trans "News" %}</a>
+        <a href="#explore-people" data-c-close-menu data-c-search-label="{% trans 'Members visitors' %}">{% trans "Members & visitors" %}</a>
+        <a href="#explore-followups" data-c-close-menu data-c-search-label="{% trans 'Follow-ups' %}">{% trans "Follow-ups" %}</a>
+        <a href="#explore-departments" data-c-close-menu data-c-search-label="{% trans 'Departments' %}">{% trans "Departments" %}</a>
+        <a href="#explore-cell-groups" data-c-close-menu data-c-search-label="{% trans 'Cell groups' %}">{% trans "Cell groups" %}</a>
+      </nav>
+    </div>
+
+    <div class="c-mobile-account">
+      <div class="c-user-chip c-user-chip-block" title="{{ user.email }}">
+        <span class="c-avatar" aria-hidden="true">
+          {{ user.first_name|default:user.username|slice:":1"|upper }}
+        </span>
+        <div class="c-user-chip-text">
+          <strong class="c-user-name-mobile">{{ user.get_full_name|default:user.username }}</strong>
+          <span class="c-user-email-mobile">{{ user.email }}</span>
+        </div>
+      </div>
+      {% if tenant_organizations %}
+      <form method="post" action="{% url 'portal_switch_organization' %}" class="c-mobile-tenant-form">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <label for="id_mobile_org">{% trans "Organisation" %}</label>
+        <select name="organization_id" id="id_mobile_org" class="c-tenant-select c-tenant-select-block" onchange="this.form.submit()">
+          {% for org in tenant_organizations %}
+          <option value="{{ org.pk }}" {% if active_organization and org.pk == active_organization.pk %}selected{% endif %}>{{ org }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      {% endif %}
+      {% if tenant_branches %}
+      <form method="post" action="{% url 'portal_switch_branch' %}" class="c-mobile-tenant-form">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <label for="id_mobile_branch">{% trans "Branch" %}</label>
+        <select name="branch_id" id="id_mobile_branch" class="c-tenant-select c-tenant-select-block" onchange="this.form.submit()">
+          {% for b in tenant_branches %}
+          <option value="{{ b.pk }}" {% if active_branch and b.pk == active_branch.pk %}selected{% endif %}>{{ b.name }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      {% endif %}
+      <div class="c-mobile-account-actions">
+        {% if is_staff_user %}
+        <a class="c-btn c-btn-secondary c-btn-block" href="{% url 'admin:index' %}">{% trans "Admin" %}</a>
+        {% endif %}
+        <form method="post" action="{% url 'portal_logout' %}" class="c-mobile-logout-form">
+          {% csrf_token %}
+          <button type="submit" class="c-btn c-btn-primary c-btn-block">{% trans "Log out" %}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="c-main">
+  {# ── Hero / greeting ── #}
+  <section class="c-hero">
+    <div class="c-container">
+      <p class="c-eyebrow">{% trans "Organisation management" %}</p>
+      <h1 class="c-hero-title">
+        {% blocktrans with name=user.first_name|default:user.username %}
+        Welcome back, {{ name }}
+        {% endblocktrans %}
+      </h1>
+      <p class="c-hero-sub">
+        {% if active_organization or active_branch %}
+          {% blocktrans with org=active_organization|default:"—" branch=active_branch|default:"—" %}
+          Working in <strong>{{ org }}</strong> · <strong>{{ branch }}</strong>. Counts and lists are scoped to this tenant for performance and isolation.
+          {% endblocktrans %}
+        {% else %}
+          {% trans "Lead without limits — choose an organisation and branch to scope your workspace." %}
+        {% endif %}
+      </p>
+      <div class="c-hero-cta">
+        <a class="c-btn c-btn-primary" href="{% url 'cf_social:feed' %}">{% trans "Open CF Social" %}</a>
+        <a class="c-btn c-btn-secondary" href="#organisations">{% trans "View my organisations" %}</a>
+        <a class="c-btn c-btn-secondary" href="#branches">{% trans "Browse branches" %}</a>
+      </div>
+    </div>
+  </section>
+
+  {# ── Metric strip ── #}
+  <section class="c-metrics" aria-label="{% trans 'Summary' %}">
+    <div class="c-container c-metrics-grid">
+      <article class="c-metric">
+        <span class="c-metric-value">{{ organizations|length }}</span>
+        <span class="c-metric-label">{% trans "Organisations" %}</span>
+      </article>
+      <article class="c-metric">
+        <span class="c-metric-value">{{ branches|length }}</span>
+        <span class="c-metric-label">{% trans "Branches" %}</span>
+      </article>
+      <article class="c-metric">
+        <span class="c-metric-value">{{ member_count }}</span>
+        <span class="c-metric-label">{% trans "Members in scope" %}</span>
+      </article>
+      <article class="c-metric">
+        <span class="c-metric-value">{{ event_count }}</span>
+        <span class="c-metric-label">{% trans "Visible events" %}</span>
+      </article>
+    </div>
+  </section>
+
+  {# ── Explore topics (mega-menu destinations) ── #}
+  <section class="c-section" id="explore">
+    <div class="c-container">
+      <div class="c-section-head">
+        <h2>{% trans "Explore" %}</h2>
+        <p class="c-section-sub">{% trans "Jump to the ministry areas you work in most." %}</p>
+      </div>
+      <div class="c-chips" role="list">
+        <a class="c-chip is-active" href="#organisations" role="listitem">{% trans "Organisations" %}</a>
+        <a class="c-chip" href="#branches" role="listitem">{% trans "Branches" %}</a>
+        <a class="c-chip" href="{% url 'cf_operations:event_list' %}" role="listitem">{% trans "Events" %}</a>
+        <a class="c-chip" href="{% url 'cf_operations:event_list' %}?type=TRAINING" role="listitem">{% trans "Training" %}</a>
+        <a class="c-chip" href="{% url 'cf_operations:sermon_list' %}" role="listitem">{% trans "Sermons" %}</a>
+        <a class="c-chip" href="{% url 'cf_operations:outreach_list' %}" role="listitem">{% trans "Outreaches" %}</a>
+        <span class="c-chip is-static" role="listitem">{% trans "People" %} · {{ member_count }}</span>
+        <span class="c-chip is-static" role="listitem">{% trans "Sermons" %} · {{ sermon_count }}</span>
+      </div>
+
+      <div class="c-explore-grid">
+        <article class="c-topic-card c-topic-card-link" id="explore-events">
+          <h3><a href="{% url 'cf_operations:event_list' %}">{% trans "Events" %}</a></h3>
+          <p>{% trans "Public platform events plus organisation-only gatherings you can access." %}</p>
+          <span class="c-topic-meta">{{ event_count }} {% trans "visible" %}</span>
+        </article>
+        <article class="c-topic-card c-topic-card-link" id="explore-sermons">
+          <h3><a href="{% url 'cf_operations:sermon_list' %}">{% trans "Sermons" %}</a></h3>
+          <p>{% trans "Messages from members and guest speakers across the platform." %}</p>
+          <span class="c-topic-meta">{{ sermon_count }} {% trans "visible" %}</span>
+        </article>
+        <article class="c-topic-card c-topic-card-link" id="explore-outreaches">
+          <h3><a href="{% url 'cf_operations:outreach_list' %}">{% trans "Outreaches" %}</a></h3>
+          <p>{% trans "Community mission and evangelism activities." %}</p>
+          <span class="c-topic-meta">{{ outreach_count }} {% trans "visible" %}</span>
+        </article>
+        <article class="c-topic-card c-topic-card-link" id="explore-training">
+          <h3><a href="{% url 'cf_operations:event_list' %}?type=TRAINING">{% trans "Training programs" %}</a></h3>
+          <p>{% trans "Discipleship tracks, leadership development, and staff training." %}</p>
+        </article>
+        <article class="c-topic-card c-topic-card-link" id="explore-camps">
+          <h3><a href="{% url 'cf_operations:event_list' %}?type=CAMP">{% trans "Camps" %}</a></h3>
+          <p>{% trans "Retreats, youth camps, and intensive fellowship programs." %}</p>
+        </article>
+        <article class="c-topic-card" id="explore-people">
+          <h3>{% trans "Members & visitors" %}</h3>
+          <p>{% trans "People records in your authorised branch scope." %}</p>
+          <span class="c-topic-meta">{{ member_count }} {% trans "in scope" %}</span>
+        </article>
+        <article class="c-topic-card" id="explore-followups">
+          <h3>{% trans "Follow-ups" %}</h3>
+          <p>{% trans "Visitor care workflows and assigned follow-up activity." %}</p>
+        </article>
+        <article class="c-topic-card" id="explore-cell-groups">
+          <h3>{% trans "Cell groups" %}</h3>
+          <p>{% trans "Small groups, zones, and satellite fellowships." %}</p>
+        </article>
+      </div>
+
+      {% if recent_events or recent_sermons %}
+      <div class="c-section-head" style="margin-top:2rem">
+        <h2>{% trans "Recently visible" %}</h2>
+        <p class="c-section-sub">{% trans "Latest public and authorised content on the platform." %}</p>
+      </div>
+      <div class="c-explore-grid">
+        {% for event in recent_events %}
+        <article class="c-topic-card c-topic-card-link">
+          <p class="c-card-partner">{{ event.get_event_type_display }}</p>
+          <h3><a href="{% url 'cf_operations:event_detail' event.pk %}">{{ event.title }}</a></h3>
+          <p class="c-card-meta">{{ event.branch }} · {% if event.visibility == "PUBLIC" %}{% trans "Public" %}{% else %}{% trans "Org only" %}{% endif %}</p>
+        </article>
+        {% endfor %}
+        {% for sermon in recent_sermons %}
+        <article class="c-topic-card c-topic-card-link">
+          <p class="c-card-partner">{% trans "Sermon" %}</p>
+          <h3><a href="{% url 'cf_operations:sermon_detail' sermon.pk %}">{{ sermon.title }}</a></h3>
+          <p class="c-card-meta">{{ sermon.get_speaker_display }}</p>
+        </article>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+  {# ── Organisations carousel ── #}
+  <section class="c-section c-section-alt" id="organisations">
+    <div class="c-container">
+      <div class="c-section-head c-section-head-row">
+        <div>
+          <h2>{% trans "Your organisations" %}</h2>
+          <p class="c-section-sub">{% trans "Networks and ministries you can access." %}</p>
+        </div>
+        <span class="c-section-count">{{ organizations|length }} {% trans "available" %}</span>
+      </div>
+
+      {% if organizations %}
+      <div class="c-card-row" tabindex="0">
+        {% for org in organizations %}
+        <article class="c-card">
+          <div class="c-card-banner c-banner-{% cycle 'a' 'b' 'c' 'd' %}">
+            <span class="c-card-banner-label">{{ org.code|default:"ORG" }}</span>
+          </div>
+          <div class="c-card-body">
+            <p class="c-card-partner">{% trans "Organisation" %}</p>
+            <h3 class="c-card-title">{{ org }}</h3>
+            <p class="c-card-meta">{{ org.city }}, {{ org.country }}</p>
+            <div class="c-card-footer">
+              {% if org.is_active %}
+              <span class="c-badge c-badge-success">{% trans "Active" %}</span>
+              {% else %}
+              <span class="c-badge">{% trans "Inactive" %}</span>
+              {% endif %}
+              {% if org.code %}<span class="c-card-skill">{{ org.code }}</span>{% endif %}
+            </div>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="c-empty">
+        <h3>{% trans "No organisations yet" %}</h3>
+        <p>{% trans "Your account is not linked to any organisation. Contact your administrator to get access." %}</p>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+  {# ── Branches carousel ── #}
+  <section class="c-section" id="branches">
+    <div class="c-container">
+      <div class="c-section-head c-section-head-row">
+        <div>
+          <h2>{% trans "Accessible branches" %}</h2>
+          <p class="c-section-sub">{% trans "Campuses and sites in your scope." %}</p>
+        </div>
+        <span class="c-section-count">{{ branches|length }} {% trans "available" %}</span>
+      </div>
+
+      {% if branches %}
+      <div class="c-card-row" tabindex="0">
+        {% for branch in branches %}
+        <article class="c-card">
+          <div class="c-card-banner c-banner-branch">
+            <span class="c-card-banner-label">{{ branch.branch_type }}</span>
+          </div>
+          <div class="c-card-body">
+            <p class="c-card-partner">{{ branch.organization }}</p>
+            <h3 class="c-card-title">{{ branch.name }}</h3>
+            <p class="c-card-meta">{{ branch.city }}, {{ branch.country }}</p>
+            <div class="c-card-footer">
+              {% if branch.is_default %}
+              <span class="c-badge c-badge-primary">{% trans "Default" %}</span>
+              {% endif %}
+              {% if branch.active %}
+              <span class="c-badge c-badge-success">{% trans "Active" %}</span>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="c-empty">
+        <h3>{% trans "No branch access" %}</h3>
+        <p>{% trans "No branch is currently assigned to your account." %}</p>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+  {# ── Primary context + value props (Coursera-style bottom panels) ── #}
+  <section class="c-section c-section-alt">
+    <div class="c-container">
+      <div class="c-section-head">
+        <h2>{% trans "Your workspace" %}</h2>
+        <p class="c-section-sub">{% trans "Context and outcomes for this session." %}</p>
+      </div>
+      <div class="c-bento">
+        <article class="c-bento-card c-bento-wide">
+          <h3>{% trans "Primary context" %}</h3>
+          <dl class="c-kv">
+            <div>
+              <dt>{% trans "Organisation" %}</dt>
+              <dd>{{ user_organization|default:_("Not set") }}</dd>
+            </div>
+            <div>
+              <dt>{% trans "Branch" %}</dt>
+              <dd>{{ user_branch|default:_("Not set") }}</dd>
+            </div>
+          </dl>
+        </article>
+        <article class="c-bento-card">
+          <h3>{% trans "Secure by design" %}</h3>
+          <p>{% trans "You only see data for organisations and branches you are authorised to access." %}</p>
+        </article>
+        <article class="c-bento-card">
+          <h3>{% trans "Built for networks" %}</h3>
+          <p>{% trans "Manage multi-branch churches, denominations, and ministries from one portal." %}</p>
+        </article>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="c-footer">
+  <div class="c-container c-footer-grid">
+    <div>
+      <div class="c-logo c-logo-footer">
+        <span class="c-logo-mark">CF</span>
+        <span class="c-logo-text">CF Portal</span>
+      </div>
+      <p class="c-footer-copy">{% trans "Enterprise organisation management for churches and networks." %}</p>
+    </div>
+    <div>
+      <h4>{% trans "Product" %}</h4>
+      <ul>
+        <li><a href="#organisations">{% trans "Organisations" %}</a></li>
+        <li><a href="#branches">{% trans "Branches" %}</a></li>
+        <li><a href="#explore">{% trans "Explore" %}</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>{% trans "Account" %}</h4>
+      <ul>
+        <li>{{ user.email }}</li>
+        {% if is_staff_user %}
+        <li><a href="{% url 'admin:index' %}">{% trans "Staff admin" %}</a></li>
+        {% endif %}
+      </ul>
+    </div>
+    <div>
+      <h4>{% trans "Support" %}</h4>
+      <ul>
+        <li>{% trans "Contact your organisation administrator for access changes." %}</li>
+      </ul>
+    </div>
+  </div>
+  <div class="c-container c-footer-bottom">
+    <span>© {% now "Y" %} CF</span>
+    <span>{% trans "Learn without limits — manage without friction." %}</span>
+  </div>
+</footer>
+<script src="{% static 'cf_users/portal.js' %}" defer></script>
+{% endblock %}

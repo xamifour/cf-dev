@@ -1,0 +1,9 @@
+{% extends "cf_social/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="s-empty s-card">
+  <h2>@{{ profile_user.username }}</h2>
+  <p>{% trans "This profile is private." %}</p>
+  <a href="{% url 'cf_social:feed' %}">{% trans "Back to feed" %}</a>
+</div>
+{% endblock %}

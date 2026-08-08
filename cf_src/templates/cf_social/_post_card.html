@@ -1,0 +1,55 @@
+{% load i18n %}
+<article class="s-card s-post">
+  <header class="s-post-head">
+    <a class="s-avatar" href="{% url 'cf_social:profile' username=post.author.username %}">
+      {% if post.author.social_profile.avatar %}
+      <img src="{{ post.author.social_profile.avatar.url }}" alt="">
+      {% else %}
+      <span>{{ post.author.first_name|default:post.author.username|slice:":1"|upper }}</span>
+      {% endif %}
+    </a>
+    <div>
+      <a class="s-author" href="{% url 'cf_social:profile' username=post.author.username %}">
+        {% if post.author.social_profile %}{{ post.author.social_profile.get_display_name }}{% else %}{{ post.author.get_full_name|default:post.author.username }}{% endif %}
+      </a>
+      <div class="s-meta">@{{ post.author.username }} · {{ post.created_at|timesince }} {% trans "ago" %} · {{ post.get_visibility_display }}</div>
+    </div>
+  </header>
+  {% if post.body %}
+  <div class="s-post-body">
+    <a href="{% url 'cf_social:post_detail' pk=post.pk %}" class="s-post-text">{{ post.body|linebreaksbr }}</a>
+  </div>
+  {% endif %}
+  {% if post.image %}
+  <a href="{% url 'cf_social:post_detail' pk=post.pk %}" class="s-media">
+    <img src="{{ post.image.url }}" alt="">
+  </a>
+  {% endif %}
+  {% if post.video %}
+  <div class="s-media">
+    <video controls src="{{ post.video.url }}"></video>
+  </div>
+  {% endif %}
+  <footer class="s-post-actions">
+    <form method="post" action="{% url 'cf_social:like_toggle' pk=post.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="s-action {% if post.liked_by_me %}is-on{% endif %}" aria-label="{% trans 'Like' %}">
+        <span aria-hidden="true">♥</span>
+        <span>{% if post.liked_by_me %}{% trans "Liked" %}{% else %}{% trans "Like" %}{% endif %}</span>
+        <span>{{ post.likes_count }}</span>
+      </button>
+    </form>
+    <a class="s-action" href="{% url 'cf_social:post_detail' pk=post.pk %}">
+      <span aria-hidden="true">💬</span>
+      <span>{% trans "Comment" %}</span>
+      <span>{{ post.comments_count }}</span>
+    </a>
+    <a class="s-action" href="{% url 'cf_social:report' %}?type=POST&id={{ post.pk }}">{% trans "Report" %}</a>
+    {% if post.author_id == request.user.id or request.user.is_staff %}
+    <form method="post" action="{% url 'cf_social:post_delete' pk=post.pk %}" onsubmit="return confirm('{% trans "Delete this post?" %}');">
+      {% csrf_token %}
+      <button type="submit" class="s-action s-danger">{% trans "Delete" %}</button>
+    </form>
+    {% endif %}
+  </footer>
+</article>

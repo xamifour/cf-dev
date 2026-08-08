@@ -1,0 +1,45 @@
+# cf-dev/cf_src/requirements.txt
+
+# Core
+Django>=5.1,<6.1
+setuptools
+psycopg2-binary
+django-environ
+django-extensions
+django-redis
+whitenoise
+gunicorn
+requests
+
+# Auth & accounts
+django-allauth
+django-phonenumber-field
+phonenumbers
+
+# API
+djangorestframework
+drf-yasg
+django-filter
+
+# Background tasks
+celery
+redis
+kombu
+
+# UI / forms
+django-widget-tweaks
+django-ckeditor-5
+Pillow
+bleach
+openpyxl
+
+# Realtime (optional stack)
+channels
+channels-redis
+daphne
+
+# Development
+django-debug-toolbar
+black
+ruff
+pre-commit

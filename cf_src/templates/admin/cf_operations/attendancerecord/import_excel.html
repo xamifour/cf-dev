@@ -1,0 +1,57 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% trans "Home" %}</a>
+  &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+  &rsaquo; <a href="{% url 'admin:cf_operations_attendancerecord_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+  &rsaquo; {% trans "Import from Excel" %}
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>{% trans "Import attendance from Excel" %}</h1>
+<p class="help">
+  {% blocktrans %}
+  Upload an <strong>Attendence.xlsx</strong>-style workbook (.xlsx). Each centre
+  row becomes an <strong>attendance record</strong> linked to an Event under the
+  selected Branch. If a Zone with the same name exists on that branch, it is
+  linked automatically. Use <strong>Generate report</strong> afterwards to view
+  the Excel-style sheet from those records.
+  {% endblocktrans %}
+</p>
+
+<form method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+  <fieldset class="module aligned">
+    <div class="form-row">
+      <label for="id_branch">{% trans "Branch" %}*</label>
+      <select name="branch" id="id_branch" required>
+        <option value="">{% trans "---------" %}</option>
+        {% for b in branches %}
+        <option value="{{ b.pk }}">{{ b.organization }} — {{ b.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="id_event">{% trans "Event (optional)" %}</label>
+      <select name="event" id="id_event">
+        <option value="">{% trans "Create event from sheet title" %}</option>
+        {% for e in events %}
+        <option value="{{ e.pk }}">{{ e.title }} ({{ e.branch }})</option>
+        {% endfor %}
+      </select>
+      <p class="help">{% trans "If empty, an event is created from the report title on the sheet." %}</p>
+    </div>
+    <div class="form-row">
+      <label for="id_excel_file">{% trans "Excel file (.xlsx)" %}*</label>
+      <input type="file" name="excel_file" id="id_excel_file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
+    </div>
+  </fieldset>
+  <div class="submit-row">
+    <input type="submit" class="default" value="{% trans 'Import' %}">
+    <a href="{% url 'admin:cf_operations_attendancerecord_changelist' %}" class="button cancel-link">{% trans "Cancel" %}</a>
+  </div>
+</form>
+{% endblock %}

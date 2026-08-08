@@ -1,0 +1,65 @@
+{% extends "cf_social/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="s-layout s-layout-narrow">
+  <div class="s-card">
+    <h1 class="s-h1">{% trans "Search" %}</h1>
+    <form method="get" class="s-search-form">
+      {{ form.q }}
+      <button class="s-btn s-btn-primary" type="submit">{% trans "Search" %}</button>
+    </form>
+  </div>
+  {% if q %}
+  <div class="s-card">
+    <h2 class="s-h2">{% trans "People" %}</h2>
+    <ul class="s-people">
+      {% for u in people %}
+      <li>
+        <div class="s-people-row">
+          <a class="s-people-main" href="{% url 'cf_social:profile' username=u.username %}">
+            <span class="s-avatar">
+              {% if u.social_profile.avatar %}
+              <img src="{{ u.social_profile.avatar.url }}" alt="">
+              {% else %}
+              <span>{{ u.first_name|default:u.username|slice:":1"|upper }}</span>
+              {% endif %}
+            </span>
+            <span>
+              <span class="s-people-name">{% if u.social_profile %}{{ u.social_profile.get_display_name }}{% else %}{{ u.get_full_name|default:u.username }}{% endif %}</span>
+              <span class="s-meta">@{{ u.username }}</span>
+            </span>
+          </a>
+          {% if u.pk != request.user.pk %}
+          <div class="s-people-actions">
+            <form method="post" action="{% url 'cf_social:follow_toggle' username=u.username %}">
+              {% csrf_token %}
+              {% if u.pk in following_ids %}
+              <input type="hidden" name="action" value="unfollow">
+              <button class="s-btn s-btn-following s-btn-sm" type="submit" title="{% trans 'Unfollow' %}">
+                <span class="s-btn-label-main">{% trans "Following" %}</span>
+                <span class="s-btn-label-alt">{% trans "Unfollow" %}</span>
+              </button>
+              {% else %}
+              <input type="hidden" name="action" value="follow">
+              <button class="s-btn s-btn-primary s-btn-sm" type="submit">{% trans "Follow" %}</button>
+              {% endif %}
+            </form>
+            <a class="s-btn s-btn-ghost s-btn-sm" href="{% url 'cf_social:profile' username=u.username %}">{% trans "View" %}</a>
+          </div>
+          {% endif %}
+        </div>
+      </li>
+      {% empty %}
+      <li class="s-muted">{% trans "No people found." %}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  <h2 class="s-h2">{% trans "Posts" %}</h2>
+  {% for post in posts %}
+    {% include "cf_social/_post_card.html" with post=post %}
+  {% empty %}
+  <div class="s-empty s-card"><p>{% trans "No posts matched." %}</p></div>
+  {% endfor %}
+  {% endif %}
+</div>
+{% endblock %}

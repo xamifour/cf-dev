@@ -1,0 +1,23 @@
+{% extends "cf_social/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="s-layout s-layout-narrow">
+  <div class="s-card">
+    <h1 class="s-h1">{% trans "Messages" %}</h1>
+    <ul class="s-inbox">
+      {% for item in conversation_items %}
+      <li>
+        <a href="{% url 'cf_social:conversation' pk=item.conversation.pk %}">
+          <strong>{% if item.other %}@{{ item.other.username }}{% else %}{% trans "Conversation" %}{% endif %}</strong>
+          <span class="s-meta">
+            {% if item.conversation.last_message_at %}{{ item.conversation.last_message_at|timesince }} {% trans "ago" %}{% endif %}
+          </span>
+        </a>
+      </li>
+      {% empty %}
+      <li class="s-muted">{% trans "No conversations yet. Message someone from their profile." %}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}
