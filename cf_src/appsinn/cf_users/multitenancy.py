@@ -285,6 +285,61 @@ class MultitenantAdminMixin:
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
+def _model_concrete_field_names(model) -> set[str]:
+    return {f.name for f in model._meta.fields}
+
+
+def resolve_organization_filter_path(
+    model, multitenant_parent: str | None = None
+) -> str | None:
+    """
+    Return a queryset filter path for organisation scope, or None.
+
+    Supports direct ``organization``, ``branch__organization``, parent FK
+    chains, or the model being Organisation itself (``pk``).
+    """
+    names = _model_concrete_field_names(model)
+    if model._meta.app_label == "cf_users" and model._meta.model_name == "organization":
+        return "pk"
+    if "organization" in names:
+        return "organization_id"
+    if "branch" in names:
+        return "branch__organization_id"
+    if multitenant_parent:
+        try:
+            parent_field = model._meta.get_field(multitenant_parent)
+            parent_model = parent_field.remote_field.model
+        except Exception:
+            parent_model = None
+        if parent_model is not None:
+            parent_names = _model_concrete_field_names(parent_model)
+            if "organization" in parent_names:
+                return f"{multitenant_parent}__organization_id"
+            if "branch" in parent_names:
+                return f"{multitenant_parent}__branch__organization_id"
+    return None
+
+
+def resolve_branch_filter_path(model, multitenant_parent: str | None = None) -> str | None:
+    """Return a queryset filter path for branch scope, or None."""
+    names = _model_concrete_field_names(model)
+    if model._meta.app_label == "cf_users" and model._meta.model_name == "branch":
+        return "pk"
+    if "branch" in names:
+        return "branch_id"
+    if multitenant_parent:
+        try:
+            parent_field = model._meta.get_field(multitenant_parent)
+            parent_model = parent_field.remote_field.model
+        except Exception:
+            parent_model = None
+        if parent_model is not None:
+            parent_names = _model_concrete_field_names(parent_model)
+            if "branch" in parent_names:
+                return f"{multitenant_parent}__branch_id"
+    return None
+
+
 class MultitenantOrgFilter(admin.SimpleListFilter):
     """Filter by Organisation — shows only organisations the user can access."""
 
@@ -295,18 +350,21 @@ class MultitenantOrgFilter(admin.SimpleListFilter):
         user = request.user
         Organization = apps.get_model("cf_users", "Organization")
         if user.is_superuser:
-            orgs = Organization.objects.all()
+            orgs = Organization.objects.all().order_by("name")
         else:
             from .tenancy import organizations_for_user_qs  # noqa: PLC0415
 
-            orgs = organizations_for_user_qs(user)
-        return [(org.pk, str(org)) for org in orgs]
+            orgs = organizations_for_user_qs(user).order_by("name")
+        return [(str(org.pk), str(org)) for org in orgs[:500]]
 
     def queryset(self, request, queryset):
         value = self.value()
-        if value:
-            return queryset.filter(organization_id=value)
-        return queryset
+        if not value:
+            return queryset
+        path = resolve_organization_filter_path(queryset.model)
+        if not path:
+            return queryset
+        return queryset.filter(**{path: value})
 
 
 class MultitenantBranchFilter(admin.SimpleListFilter):
@@ -319,13 +377,36 @@ class MultitenantBranchFilter(admin.SimpleListFilter):
         user = request.user
         Branch = apps.get_model("cf_users", "Branch")
         if user.is_superuser:
-            branches = Branch.objects.all()
+            branches = Branch.objects.select_related("organization").order_by(
+                "organization__name", "name"
+            )
         else:
-            branches = Branch.objects.filter(pk__in=user.accessible_branches)
-        return [(b.pk, str(b)) for b in branches]
+            from .tenancy import accessible_branch_ids_qs  # noqa: PLC0415
+
+            branches = (
+                Branch.objects.filter(pk__in=accessible_branch_ids_qs(user))
+                .select_related("organization")
+                .order_by("organization__name", "name")
+            )
+        return [(str(b.pk), str(b)) for b in branches[:500]]
 
     def queryset(self, request, queryset):
         value = self.value()
-        if value:
-            return queryset.filter(branch_id=value)
-        return queryset
+        if not value:
+            return queryset
+        parent = getattr(
+            getattr(request, "resolver_match", None), "func", None
+        )
+        # Prefer path from model; parent path used when branch is on parent FK.
+        path = resolve_branch_filter_path(queryset.model)
+        if not path:
+            # Try common parent names used by child admins.
+            for parent_name in ("record", "department", "group", "event"):
+                path = resolve_branch_filter_path(
+                    queryset.model, multitenant_parent=parent_name
+                )
+                if path:
+                    break
+        if not path:
+            return queryset
+        return queryset.filter(**{path: value})

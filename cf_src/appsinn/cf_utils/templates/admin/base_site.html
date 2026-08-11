@@ -1,0 +1,142 @@
+{% extends "admin/base.html" %}
+{% load i18n static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('CF Admin') }}{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'cf_utils/admin_theme/css/admin_theme.css' %}">
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<meta name="theme-color" content="#0a0f1c">
+<script src="{% static 'cf_utils/admin_theme/js/admin_theme.js' %}" defer></script>
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} cf-admin-theme{% endblock %}
+
+{# ── Left menu bar: org logo / brand (sticky with #menu) ─────────────── #}
+{% block menu-bar %}
+<div class="cf-nav-brand">
+  <a href="{% url 'admin:index' %}" class="cf-nav-brand-link">
+    {% if active_organization.logo %}
+      <img class="cf-nav-logo" src="{{ active_organization.logo.url }}" alt="{{ active_organization }}">
+    {% elif user_organization.logo %}
+      <img class="cf-nav-logo" src="{{ user_organization.logo.url }}" alt="{{ user_organization }}">
+    {% else %}
+      <span class="cf-brand-mark cf-nav-mark" aria-hidden="true"></span>
+    {% endif %}
+    <span class="cf-nav-brand-text">
+      <span class="cf-nav-brand-title">
+        {% if active_organization %}
+          {{ active_organization.trade_name|default:active_organization.name }}
+        {% elif user_organization %}
+          {{ user_organization.trade_name|default:user_organization.name }}
+        {% else %}
+          {{ site_header|default:_('CF Church Administration') }}
+        {% endif %}
+      </span>
+      <span class="cf-nav-brand-sub">{% translate "Operations console" %}</span>
+    </span>
+  </a>
+</div>
+{% endblock %}
+
+{# ── Left menu body: filter + apps ───────────────────────────────────── #}
+{% block menu %}
+<input type="search" id="nav-filter" class="cf-menu-filter"
+       placeholder="{% translate 'Start typing to filter…' %}"
+       aria-label="{% translate 'Filter navigation items' %}"
+       data-cf-menu-filter>
+<div class="cf-menu-apps" id="cf-menu-apps">
+  {% if available_apps %}
+    {% include "admin/app_list.html" with app_list=available_apps show_changelinks=False %}
+  {% else %}
+    <p class="cf-menu-empty">{% translate "No apps available." %}</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{# ── Top bar account tools (right) ───────────────────────────────────── #}
+{% block user-tools %}
+{% if has_permission %}
+<div id="user-tools" class="cf-user-tools">
+  {% include "admin/color_theme_toggle.html" %}
+
+  <div class="cf-account" data-cf-account>
+    <button type="button"
+            class="cf-account-trigger"
+            id="cf-account-trigger"
+            aria-haspopup="true"
+            aria-expanded="false"
+            aria-controls="cf-account-menu"
+            data-cf-account-trigger>
+      <span class="cf-avatar" aria-hidden="true">
+        {% with fn=user.first_name|default:user.username ln=user.last_name|default:"" %}
+          {{ fn|slice:":1"|upper }}{{ ln|slice:":1"|upper }}
+        {% endwith %}
+      </span>
+      <span class="cf-account-meta">
+        <span class="cf-account-name">{% firstof user.get_short_name user.get_username %}</span>
+        <span class="cf-account-hint">{% translate "Account" %}</span>
+      </span>
+      <span class="cf-account-caret" aria-hidden="true">▾</span>
+    </button>
+
+    <div class="cf-account-menu" id="cf-account-menu" role="menu" hidden data-cf-account-menu>
+      <div class="cf-account-menu-head">
+        <span class="cf-avatar cf-avatar-lg" aria-hidden="true">
+          {% with fn=user.first_name|default:user.username ln=user.last_name|default:"" %}
+            {{ fn|slice:":1"|upper }}{{ ln|slice:":1"|upper }}
+          {% endwith %}
+        </span>
+        <div class="cf-account-menu-id">
+          <strong>{% firstof user.get_full_name user.get_username %}</strong>
+          <span class="cf-account-email">{{ user.email }}</span>
+        </div>
+      </div>
+
+      <ul class="cf-account-menu-list">
+        <li class="cf-account-info" role="presentation">
+          <span class="cf-account-info-label">{% translate "Date registered" %}:</span>
+          <span class="cf-account-info-value">
+            {% if user.date_joined %}{{ user.date_joined|date:"M j, Y, g:i A" }}{% else %}—{% endif %}
+          </span>
+        </li>
+        <li class="cf-account-info" role="presentation">
+          <span class="cf-account-info-label">{% translate "Last login" %}:</span>
+          <span class="cf-account-info-value">
+            {% if user.last_login %}{{ user.last_login|date:"M j, Y, g:i A" }}{% else %}—{% endif %}
+          </span>
+        </li>
+        {% if user.has_usable_password %}
+        <li role="none">
+          <a role="menuitem" href="{% url 'admin:password_change' %}">{% translate "Change password" %}</a>
+        </li>
+        {% endif %}
+        {% if site_url %}
+        <li role="none" class="cf-account-pre-logout">
+          <a role="menuitem" href="{{ site_url }}">{% translate "View site" %}</a>
+        </li>
+        {% endif %}
+        <li role="none" class="cf-account-logout">
+          <form id="logout-form" method="post" action="{% url 'admin:logout' %}">
+            {% csrf_token %}
+            <button type="submit" role="menuitem">{% translate "Log out" %}</button>
+          </form>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block footer %}
+<div class="cf-footer-inner">
+  <span class="cf-footer-brand">CF Nexus</span>
+  <span class="cf-footer-sep">·</span>
+  <span class="cf-footer-meta">{% translate "Secure staff workspace" %}</span>
+</div>
+{% endblock %}

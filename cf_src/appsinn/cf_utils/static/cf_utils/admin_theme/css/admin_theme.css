@@ -1,0 +1,2201 @@
+/**
+ * CF Admin Theme — outer chrome only.
+ *
+ * Styles shell: page background, header, breadcrumbs, sidebar frame,
+ * dashboard hero, messages strip, footer.
+ *
+ * Intentionally does NOT redesign default changelist tables, form widgets,
+ * fieldsets content grids, or filter lists — those keep Django defaults.
+ */
+
+/* ── Palette & tokens (light) ─────────────────────────────────────────── */
+html[data-theme="light"],
+:root {
+  --cf-bg-0: #f4f7fc;
+  --cf-bg-1: #e8eef8;
+  --cf-bg-2: #ffffff;
+  --cf-ink: #0f172a;
+  --cf-ink-muted: #475569;
+  --cf-accent: #06b6d4;
+  --cf-accent-2: #7c3aed;
+  --cf-accent-3: #22d3ee;
+  --cf-glow: rgba(6, 182, 212, 0.35);
+  --cf-glow-2: rgba(124, 58, 237, 0.28);
+  --cf-glass: rgba(255, 255, 255, 0.72);
+  --cf-glass-border: rgba(15, 23, 42, 0.08);
+  --cf-header-grad: linear-gradient(125deg, #0b1224 0%, #13203f 42%, #1a1040 100%);
+  --cf-grid: rgba(15, 23, 42, 0.04);
+
+  /* Map Django admin variables for outer chrome cohesion */
+  --primary: #0891b2;
+  --secondary: #0f172a;
+  --accent: #22d3ee;
+  --primary-fg: #f8fafc;
+  --header-bg: #0b1224;
+  --header-color: #e2e8f0;
+  --header-link-color: #f0f9ff;
+  --header-branding-color: #67e8f9;
+  --breadcrumbs-bg: #111827;
+  --breadcrumbs-fg: #94a3b8;
+  --breadcrumbs-link-fg: #e0f2fe;
+  --body-bg: var(--cf-bg-0);
+  --body-fg: var(--cf-ink);
+  --link-fg: #0e7490;
+  --link-hover-color: #7c3aed;
+  --hairline-color: rgba(15, 23, 42, 0.08);
+  --border-color: rgba(15, 23, 42, 0.12);
+  --darkened-bg: #eef2f9;
+  --selected-bg: #e0f2fe;
+  --selected-row: #cffafe;
+  --button-bg: #0e7490;
+  --button-hover-bg: #155e75;
+  --default-button-bg: #7c3aed;
+  --default-button-hover-bg: #6d28d9;
+  --object-tools-bg: #334155;
+  --object-tools-hover-bg: #0e7490;
+}
+
+/* ── Palette (dark) ───────────────────────────────────────────────────── */
+html[data-theme="dark"] {
+  --cf-bg-0: #060a12;
+  --cf-bg-1: #0b1220;
+  --cf-bg-2: #111827;
+  --cf-ink: #e2e8f0;
+  --cf-ink-muted: #94a3b8;
+  --cf-accent: #22d3ee;
+  --cf-accent-2: #a78bfa;
+  --cf-accent-3: #67e8f9;
+  --cf-glow: rgba(34, 211, 238, 0.22);
+  --cf-glow-2: rgba(167, 139, 250, 0.2);
+  --cf-glass: rgba(15, 23, 42, 0.55);
+  --cf-glass-border: rgba(148, 163, 184, 0.14);
+  --cf-header-grad: linear-gradient(125deg, #030712 0%, #0b1224 45%, #1e1035 100%);
+  --cf-grid: rgba(148, 163, 184, 0.05);
+
+  --primary: #22d3ee;
+  --secondary: #020617;
+  --accent: #a78bfa;
+  --primary-fg: #f8fafc;
+  --header-bg: #030712;
+  --header-color: #e2e8f0;
+  --header-link-color: #e0f2fe;
+  --header-branding-color: #67e8f9;
+  --breadcrumbs-bg: #020617;
+  --breadcrumbs-fg: #94a3b8;
+  --breadcrumbs-link-fg: #a5f3fc;
+  --body-bg: var(--cf-bg-0);
+  --body-fg: var(--cf-ink);
+  --link-fg: #67e8f9;
+  --link-hover-color: #c4b5fd;
+  --hairline-color: rgba(148, 163, 184, 0.12);
+  --border-color: rgba(148, 163, 184, 0.18);
+  --darkened-bg: #0f172a;
+  --selected-bg: #164e63;
+  --selected-row: #155e75;
+  --button-bg: #0891b2;
+  --button-hover-bg: #0e7490;
+  --default-button-bg: #7c3aed;
+  --default-button-hover-bg: #6d28d9;
+  --object-tools-bg: #1e293b;
+  --object-tools-hover-bg: #0891b2;
+}
+
+/* ── Body / page shell ────────────────────────────────────────────────── */
+body.cf-admin-theme {
+  background-color: var(--cf-bg-0) !important;
+  background-image:
+    radial-gradient(ellipse 90% 50% at 10% -10%, var(--cf-glow), transparent 55%),
+    radial-gradient(ellipse 70% 40% at 100% 0%, var(--cf-glow-2), transparent 50%),
+    linear-gradient(var(--cf-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--cf-grid) 1px, transparent 1px);
+  background-size: auto, auto, 48px 48px, 48px 48px;
+  background-attachment: scroll;
+  color: var(--cf-ink);
+  min-height: 100%;
+  overflow-x: hidden !important;
+}
+
+body.cf-admin-theme #container {
+  min-height: 100vh;
+  background: transparent;
+}
+
+/* Soft ambient layer behind main content (not tables/forms) */
+body.cf-admin-theme #main {
+  position: relative;
+}
+
+body.cf-admin-theme #main::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  max-width: 100%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 80% 70%, var(--cf-glow-2), transparent 40%),
+    radial-gradient(circle at 15% 85%, var(--cf-glow), transparent 35%);
+  opacity: 0.55;
+}
+
+body.cf-admin-theme #main > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Header ───────────────────────────────────────────────────────────── */
+body.cf-admin-theme #header {
+  background:
+    radial-gradient(
+      600px 180px at var(--cf-mx, 70%) var(--cf-my, 30%),
+      rgba(34, 211, 238, 0.18),
+      transparent 55%
+    ),
+    var(--cf-header-grad) !important;
+  border-bottom: 1px solid rgba(103, 232, 249, 0.18);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 12px 40px rgba(2, 6, 23, 0.35);
+  padding: 0.65rem 1.25rem 0.65rem 1.5rem;
+  display: flex !important;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+body.cf-admin-theme #branding {
+  display: flex;
+  align-items: center;
+}
+
+body.cf-admin-theme .cf-brand-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none !important;
+  color: inherit;
+}
+
+body.cf-admin-theme .cf-brand-mark {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.65rem;
+  background:
+    linear-gradient(145deg, #22d3ee 0%, #7c3aed 55%, #0ea5e9 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.2) inset,
+    0 0 24px var(--cf-glow);
+  position: relative;
+  flex-shrink: 0;
+}
+
+body.cf-admin-theme .cf-brand-mark::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 0.35rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  opacity: 0.9;
+}
+
+body.cf-admin-theme .cf-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  gap: 0.15rem;
+}
+
+body.cf-admin-theme .cf-brand-title,
+body.cf-admin-theme #site-name a {
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em;
+  color: #f8fafc !important;
+  text-shadow: 0 0 20px rgba(34, 211, 238, 0.35);
+}
+
+body.cf-admin-theme .cf-brand-sub {
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #94a3b8;
+}
+
+body.cf-admin-theme #user-tools.cf-user-tools {
+  float: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-left: auto !important;
+  text-align: right;
+  font-weight: 500;
+  color: #cbd5e1 !important;
+  letter-spacing: 0.01em;
+}
+
+/* subtle top scan line */
+body.cf-admin-theme .cf-nav-global {
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #22d3ee 25%,
+    #a78bfa 50%,
+    #22d3ee 75%,
+    transparent 100%
+  );
+  opacity: 0.85;
+  position: relative;
+  overflow: hidden;
+}
+
+body.cf-admin-theme .cf-nav-pulse {
+  display: block;
+  height: 100%;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85), transparent);
+  animation: cf-scan 4.5s linear infinite;
+}
+
+@keyframes cf-scan {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(420%); }
+}
+
+/* ── Breadcrumbs ──────────────────────────────────────────────────────── */
+body.cf-admin-theme .breadcrumbs {
+  background: linear-gradient(90deg, #0b1220, #111827 60%, #1e1b4b) !important;
+  border-bottom: 1px solid rgba(103, 232, 249, 0.12);
+  padding: 0.65rem 1.25rem !important;
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
+}
+
+body.cf-admin-theme .breadcrumbs a {
+  color: #67e8f9 !important;
+}
+
+body.cf-admin-theme .breadcrumbs a:hover {
+  color: #e0f2fe !important;
+}
+
+/* ── Content frame (outer only) ───────────────────────────────────────── */
+body.cf-admin-theme #content {
+  padding-top: 1.25rem;
+}
+
+body.cf-admin-theme #content > h1 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--cf-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Glass panel around main column — does not restyle inner tables/forms */
+body.cf-admin-theme:not(.popup) #content-main,
+body.cf-admin-theme:not(.popup) .cf-dashboard-shell,
+body.cf-admin-theme:not(.popup) #content.colM,
+body.cf-admin-theme:not(.popup) #content.flex {
+  /* leave layout alone; subtle outer polish via module headers only */
+}
+
+/* Module chrome (headers / cards) — keep module body defaults.
+   Exclude #nav-sidebar so the left menu keeps readable contrast. */
+body.cf-admin-theme .module > h2,
+body.cf-admin-theme .module caption,
+body.cf-admin-theme .inline-group h2 {
+  background: linear-gradient(90deg, #0f172a, #1e293b 70%, #312e81) !important;
+  color: #e2e8f0 !important;
+  border-radius: 0.5rem 0.5rem 0 0;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  border-bottom: 1px solid rgba(34, 211, 238, 0.25);
+}
+
+body.cf-admin-theme .module {
+  border-radius: 0.55rem;
+  border: 1px solid var(--cf-glass-border) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 10px 30px rgba(2, 6, 23, 0.08);
+  overflow: hidden;
+  background: var(--cf-glass);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Undo glass treatment inside the left nav (readability first) */
+body.cf-admin-theme #nav-sidebar .module {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  margin-bottom: 0.35rem;
+}
+
+body.cf-admin-theme #nav-sidebar .module caption,
+body.cf-admin-theme #nav-sidebar .module > h2 {
+  background: transparent !important;
+  color: var(--cf-nav-caption) !important;
+  border-radius: 0 !important;
+  border-bottom: 1px solid var(--cf-glass-border) !important;
+  letter-spacing: 0.06em;
+  font-size: 0.7rem !important;
+  padding: 0.55rem 0.75rem !important;
+}
+
+/* Messages */
+body.cf-admin-theme ul.messagelist li {
+  border-radius: 0.5rem;
+  border: 1px solid var(--cf-glass-border);
+  box-shadow: 0 8px 24px rgba(2, 6, 23, 0.08);
+}
+
+/* Object tools (list page action buttons chrome only) */
+body.cf-admin-theme .object-tools a {
+  border-radius: 999px !important;
+  letter-spacing: 0.03em;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+body.cf-admin-theme .object-tools a:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px var(--cf-glow);
+}
+
+/* ── Left nav sidebar (high-contrast menu links) ───────────────────────
+ *
+ * Django uses --header-color for .current-app .section links. Our header
+ * color is light (for the dark top bar), which made those links unreadable
+ * on the sidebar. Force explicit colors here.
+ */
+body.cf-admin-theme {
+  --cf-nav-bg: #0b1220;
+  --cf-nav-fg: #e2e8f0;
+  --cf-nav-muted: #94a3b8;
+  --cf-nav-link: #e0f2fe;
+  --cf-nav-link-hover: #67e8f9;
+  --cf-nav-caption: #67e8f9;
+  --cf-nav-active-bg: rgba(34, 211, 238, 0.14);
+  --cf-nav-row-hover: rgba(148, 163, 184, 0.1);
+  --cf-nav-border: rgba(148, 163, 184, 0.16);
+}
+
+html[data-theme="light"] body.cf-admin-theme {
+  --cf-nav-bg: #f8fafc;
+  --cf-nav-fg: #0f172a;
+  --cf-nav-muted: #475569;
+  --cf-nav-link: #0f172a;
+  --cf-nav-link-hover: #0e7490;
+  --cf-nav-caption: #0e7490;
+  --cf-nav-active-bg: rgba(8, 145, 178, 0.12);
+  --cf-nav-row-hover: rgba(15, 23, 42, 0.05);
+  --cf-nav-border: rgba(15, 23, 42, 0.1);
+}
+
+body.cf-admin-theme .toggle-nav-sidebar {
+  background: var(--cf-nav-bg) !important;
+  color: var(--cf-nav-link) !important;
+  border-right: 1px solid var(--cf-nav-border) !important;
+  z-index: 30;
+}
+
+body.cf-admin-theme .toggle-nav-sidebar:hover,
+body.cf-admin-theme .toggle-nav-sidebar:focus {
+  background: var(--cf-nav-active-bg) !important;
+  color: var(--cf-nav-link-hover) !important;
+}
+
+body.cf-admin-theme #nav-sidebar {
+  background: var(--cf-nav-bg) !important;
+  color: var(--cf-nav-fg) !important;
+  border-right: 1px solid var(--cf-nav-border) !important;
+  box-shadow: 6px 0 28px rgba(2, 6, 23, 0.12);
+  z-index: 25;
+}
+
+/* If JS has not run yet, still show the toggle strip (desktop only) */
+@media (min-width: 768px) {
+  body.cf-admin-theme:not(.dashboard) .toggle-nav-sidebar {
+    display: flex !important;
+  }
+}
+
+body.cf-admin-theme #nav-sidebar table {
+  color: var(--cf-nav-fg) !important;
+  background: transparent !important;
+}
+
+body.cf-admin-theme #nav-sidebar th,
+body.cf-admin-theme #nav-sidebar td {
+  color: var(--cf-nav-fg) !important;
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+body.cf-admin-theme #nav-sidebar a,
+body.cf-admin-theme #nav-sidebar a:link,
+body.cf-admin-theme #nav-sidebar a:visited {
+  color: var(--cf-nav-link) !important;
+  text-decoration: none !important;
+  font-weight: 500;
+}
+
+/* Django sets current-app section to --header-color (too pale on light nav) */
+body.cf-admin-theme #nav-sidebar .current-app .section:link,
+body.cf-admin-theme #nav-sidebar .current-app .section:visited,
+body.cf-admin-theme #nav-sidebar .module caption a,
+body.cf-admin-theme #nav-sidebar .module caption a:link,
+body.cf-admin-theme #nav-sidebar .module caption a:visited {
+  color: var(--cf-nav-caption) !important;
+  font-weight: 700 !important;
+}
+
+body.cf-admin-theme #nav-sidebar a:hover,
+body.cf-admin-theme #nav-sidebar a:focus {
+  color: var(--cf-nav-link-hover) !important;
+}
+
+body.cf-admin-theme #nav-sidebar tr:hover th,
+body.cf-admin-theme #nav-sidebar tr:hover td {
+  background: var(--cf-nav-row-hover) !important;
+}
+
+body.cf-admin-theme #nav-sidebar .current-model {
+  background: var(--cf-nav-active-bg) !important;
+  border-left: 3px solid var(--cf-accent) !important;
+  box-shadow: none;
+}
+
+body.cf-admin-theme #nav-sidebar .current-model a {
+  color: var(--cf-nav-link-hover) !important;
+  font-weight: 600 !important;
+}
+
+body.cf-admin-theme #nav-sidebar a.cf-nav-current {
+  color: var(--cf-nav-link-hover) !important;
+  font-weight: 600;
+}
+
+body.cf-admin-theme #nav-sidebar .cf-nav-current-row {
+  background: var(--cf-nav-active-bg) !important;
+}
+
+body.cf-admin-theme #nav-filter {
+  border-radius: 0.45rem !important;
+  border: 1px solid var(--cf-nav-border) !important;
+  background: color-mix(in srgb, var(--cf-nav-bg) 70%, #000 8%) !important;
+  color: var(--cf-nav-fg) !important;
+  margin: 0.65rem 0.5rem !important;
+  width: calc(100% - 1rem) !important;
+  padding: 0.4rem 0.55rem !important;
+}
+
+body.cf-admin-theme #nav-filter::placeholder {
+  color: var(--cf-nav-muted);
+  opacity: 0.9;
+}
+
+body.cf-admin-theme #nav-filter:focus {
+  border-color: var(--cf-accent) !important;
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cf-accent) 35%, transparent);
+}
+
+/* Mini “Add” links in sidebar */
+body.cf-admin-theme #nav-sidebar .addlink {
+  color: var(--cf-nav-muted) !important;
+}
+
+body.cf-admin-theme #nav-sidebar .addlink:hover {
+  color: var(--cf-nav-link-hover) !important;
+}
+
+/* Footer */
+body.cf-admin-theme #footer {
+  margin-top: auto;
+  padding: 1rem 1.5rem 1.5rem;
+  color: var(--cf-ink-muted);
+  font-size: 0.78rem;
+}
+
+body.cf-admin-theme .cf-footer-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0.85;
+}
+
+body.cf-admin-theme .cf-footer-brand {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, var(--cf-accent), var(--cf-accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+body.cf-admin-theme .cf-footer-sep {
+  opacity: 0.4;
+}
+
+/* Login page shell */
+body.cf-admin-theme.login #container {
+  background: transparent !important;
+}
+
+body.cf-admin-theme.login #header {
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+
+body.cf-admin-theme.login #content {
+  background: var(--cf-glass);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--cf-glass-border);
+  border-top: none;
+  border-radius: 0 0 0.75rem 0.75rem;
+  box-shadow: 0 20px 50px rgba(2, 6, 23, 0.25);
+}
+
+/* ── Dashboard (index) ────────────────────────────────────────────────── */
+body.cf-admin-theme.cf-dashboard #content {
+  width: auto;
+}
+
+body.cf-admin-theme .cf-dashboard-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+body.cf-admin-theme .cf-dashboard-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1.35rem 1.5rem;
+  border-radius: 1rem;
+  background:
+    radial-gradient(
+      500px 200px at var(--cf-mx, 85%) var(--cf-my, 20%),
+      rgba(167, 139, 250, 0.28),
+      transparent 55%
+    ),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 27, 75, 0.88)),
+    radial-gradient(circle at 90% 20%, rgba(34, 211, 238, 0.25), transparent 45%);
+  border: 1px solid rgba(103, 232, 249, 0.2);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 20px 50px rgba(2, 6, 23, 0.35);
+  color: #e2e8f0;
+  position: relative;
+  overflow: hidden;
+}
+
+body.cf-admin-theme .cf-dashboard-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(90deg, transparent, #000 30%, #000 80%, transparent);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+body.cf-admin-theme .cf-dashboard-hero-copy,
+body.cf-admin-theme .cf-dashboard-hero-stats {
+  position: relative;
+  z-index: 1;
+}
+
+body.cf-admin-theme .cf-kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #67e8f9;
+}
+
+body.cf-admin-theme .cf-dashboard-title {
+  margin: 0 0 0.4rem;
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #f8fafc;
+}
+
+body.cf-admin-theme .cf-dashboard-lead {
+  margin: 0;
+  max-width: 36rem;
+  color: #94a3b8;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+body.cf-admin-theme .cf-dashboard-hero-stats {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+body.cf-admin-theme .cf-stat-orb {
+  min-width: 6.5rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.85rem;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.12);
+  text-align: center;
+}
+
+body.cf-admin-theme .cf-stat-orb-alt {
+  border-color: rgba(167, 139, 250, 0.35);
+  box-shadow: 0 0 24px rgba(167, 139, 250, 0.12);
+}
+
+body.cf-admin-theme .cf-stat-label {
+  display: block;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 0.25rem;
+}
+
+body.cf-admin-theme .cf-stat-value {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #f8fafc;
+  font-variant-numeric: tabular-nums;
+}
+
+body.cf-admin-theme .cf-stat-live {
+  font-size: 0.95rem;
+  color: #4ade80;
+  text-shadow: 0 0 12px rgba(74, 222, 128, 0.45);
+}
+
+body.cf-admin-theme .cf-app-list {
+  /* app_list structure unchanged; outer spacing only */
+}
+
+body.cf-admin-theme .cf-sidebar-panel {
+  margin-top: 0;
+}
+
+body.cf-admin-theme.dashboard #content-related {
+  margin-top: 0;
+}
+
+/* App list captions slightly more premium (outer labels, not table cells) */
+body.cf-admin-theme.dashboard .app-list .module caption a,
+body.cf-admin-theme.dashboard .app-list .module caption {
+  letter-spacing: 0.06em;
+}
+
+/* Skip-link */
+body.cf-admin-theme .skip-to-content-link:focus {
+  background: #0f172a;
+  color: #67e8f9;
+  outline: 2px solid #22d3ee;
+}
+
+/* ── Respect reduced motion ───────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  body.cf-admin-theme .cf-nav-pulse {
+    animation: none;
+  }
+  body.cf-admin-theme .object-tools a {
+    transition: none;
+  }
+}
+
+/* ── Narrow screens ───────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  body.cf-admin-theme .cf-dashboard-hero {
+    padding: 1rem;
+  }
+  body.cf-admin-theme .cf-dashboard-title {
+    font-size: 1.25rem;
+  }
+  body.cf-admin-theme .cf-brand-sub {
+    display: none;
+  }
+}
+
+/* ── Changelist filters above the table (not right column) ───────────── */
+body.cf-admin-theme #changelist.cf-filters-top .changelist-form-container,
+body.cf-admin-theme #changelist.filtered .cf-changelist-stack,
+body.cf-admin-theme.cf-changelist-filters-top #changelist .changelist-form-container {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  gap: 0.75rem;
+}
+
+body.cf-admin-theme #changelist.cf-filters-top .changelist-form-container > div,
+body.cf-admin-theme #changelist.filtered .cf-changelist-stack > .cf-changelist-results-wrap,
+body.cf-admin-theme.cf-changelist-filters-top #changelist .changelist-form-container > div {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+body.cf-admin-theme #changelist-filter.cf-changelist-filter-top,
+body.cf-admin-theme #changelist.cf-filters-top #changelist-filter,
+body.cf-admin-theme.cf-changelist-filters-top #changelist-filter {
+  order: -1 !important;
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 0 0.25rem 0 !important;
+  border: 1px solid var(--cf-glass-border) !important;
+  border-radius: 0.55rem !important;
+  background: var(--cf-glass) !important;
+  box-shadow: 0 8px 24px rgba(2, 6, 23, 0.06);
+  padding: 0 0 0.35rem;
+}
+
+body.cf-admin-theme #changelist-filter.cf-changelist-filter-top h2,
+body.cf-admin-theme.cf-changelist-filters-top #changelist-filter h2 {
+  margin: 0 0 0.5rem !important;
+  border-radius: 0.55rem 0.55rem 0 0;
+  background: linear-gradient(90deg, #0f172a, #1e293b 70%, #312e81) !important;
+  color: #e2e8f0 !important;
+  padding: 0.55rem 1rem !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.06em;
+}
+
+body.cf-admin-theme #changelist-filter .cf-filter-specs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  padding: 0 0.5rem 0.5rem;
+  align-items: flex-start;
+}
+
+/* Each filter group sits in a horizontal band above the table */
+body.cf-admin-theme #changelist-filter .cf-filter-specs > details,
+body.cf-admin-theme #changelist-filter .cf-filter-specs > div {
+  flex: 1 1 12rem;
+  min-width: 10rem;
+  max-width: 18rem;
+  margin: 0 !important;
+  border: 1px solid var(--cf-glass-border);
+  border-radius: 0.4rem;
+  background: var(--cf-bg-2, var(--body-bg));
+  padding: 0.35rem 0.15rem 0.15rem;
+}
+
+body.cf-admin-theme #changelist-filter .cf-filter-specs details summary,
+body.cf-admin-theme #changelist-filter .cf-filter-specs h3 {
+  padding: 0.25rem 0.65rem !important;
+  margin: 0 !important;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--cf-ink);
+}
+
+body.cf-admin-theme #changelist-filter .cf-filter-specs ul {
+  border-bottom: none !important;
+  padding: 0.15rem 0.65rem 0.5rem !important;
+  margin: 0 !important;
+  max-height: 10rem;
+  overflow: auto;
+}
+
+body.cf-admin-theme #changelist-filter #changelist-filter-extra-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  padding: 0 0.85rem 0.35rem;
+}
+
+body.cf-admin-theme #changelist.cf-filters-top .results,
+body.cf-admin-theme.cf-changelist-filters-top #changelist .results {
+  width: 100% !important;
+}
+
+/*
+ * Explicit non-goals (leave Django defaults):
+ * - table, th, td, tr (changelist / form tables)
+ * - input, select, textarea, checkbox, radio
+ * - .form-row, .aligned label, fieldset.module .form-row
+ * - Related object widgets, calendar, clock
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CF theme v2 — account menu, fixed nav, dropdown filters, dashboard grid,
+   report page, no underlines
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Site-wide: no underlines on links */
+body.cf-admin-theme a,
+body.cf-admin-theme a:link,
+body.cf-admin-theme a:visited,
+body.cf-admin-theme a:hover,
+body.cf-admin-theme a:active,
+body.cf-admin-theme a:focus {
+  text-decoration: none !important;
+}
+
+/* ── Account avatar menu (top-right) ─────────────────────────────────── */
+body.cf-admin-theme .cf-account {
+  position: relative;
+}
+
+body.cf-admin-theme .cf-account-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.25rem 0.55rem 0.25rem 0.25rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(15, 23, 42, 0.45);
+  color: #e2e8f0 !important;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.1;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+body.cf-admin-theme .cf-account-trigger:hover,
+body.cf-admin-theme .cf-account.is-open .cf-account-trigger {
+  border-color: rgba(34, 211, 238, 0.55);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.12);
+  background: rgba(15, 23, 42, 0.75);
+}
+
+body.cf-admin-theme .cf-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #0f172a;
+  background: linear-gradient(145deg, #67e8f9, #a78bfa 55%, #38bdf8);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12) inset;
+  flex-shrink: 0;
+}
+
+body.cf-admin-theme .cf-avatar-lg {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 0.85rem;
+}
+
+body.cf-admin-theme .cf-account-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  text-align: left;
+}
+
+body.cf-admin-theme .cf-account-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #f8fafc;
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.cf-admin-theme .cf-account-hint {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+}
+
+body.cf-admin-theme .cf-account-caret {
+  color: #94a3b8;
+  font-size: 0.7rem;
+  margin-right: 0.15rem;
+}
+
+body.cf-admin-theme .cf-account-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.45rem);
+  width: min(18.5rem, 92vw);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: #0b1220;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 22px 50px rgba(2, 6, 23, 0.55);
+  z-index: 200;
+  overflow: hidden;
+  color: #e2e8f0;
+}
+
+body.cf-admin-theme .cf-account-menu[hidden] {
+  display: none !important;
+}
+
+body.cf-admin-theme .cf-account-menu-head {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.08), rgba(124, 58, 237, 0.1));
+}
+
+body.cf-admin-theme .cf-account-menu-id {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+body.cf-admin-theme .cf-account-menu-id strong {
+  font-size: 0.9rem;
+  color: #f8fafc;
+}
+
+body.cf-admin-theme .cf-account-email {
+  font-size: 0.78rem;
+  color: #67e8f9;
+  word-break: break-all;
+}
+
+body.cf-admin-theme .cf-account-menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.4rem 0;
+}
+
+body.cf-admin-theme .cf-account-menu-list a,
+body.cf-admin-theme .cf-account-menu-list button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 1rem;
+  border: 0;
+  background: transparent;
+  color: #e2e8f0 !important;
+  font: inherit;
+  cursor: pointer;
+}
+
+body.cf-admin-theme .cf-account-menu-list a:hover,
+body.cf-admin-theme .cf-account-menu-list button:hover {
+  background: rgba(34, 211, 238, 0.1);
+  color: #a5f3fc !important;
+}
+
+body.cf-admin-theme .cf-account-info {
+  padding: 0.45rem 1rem;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+body.cf-admin-theme .cf-account-info-label {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+body.cf-admin-theme .cf-account-info-value {
+  flex: 1 1 auto;
+  font-size: 0.8rem;
+  color: #e2e8f0;
+  text-align: right;
+  white-space: nowrap;
+}
+
+body.cf-admin-theme .cf-account-pre-logout {
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  margin-top: 0.25rem;
+  padding-top: 0.15rem;
+}
+
+body.cf-admin-theme .cf-account-logout {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+body.cf-admin-theme .cf-account-logout button {
+  color: #fca5a5 !important;
+  font-weight: 600;
+}
+
+body.cf-admin-theme .cf-account-logout button:hover {
+  background: rgba(248, 113, 113, 0.12) !important;
+  color: #fecaca !important;
+}
+
+body.cf-admin-theme #user-tools .theme-toggle {
+  margin: 0;
+}
+
+/*
+ * Left navigation: stay in Django’s flex flow (no fixed + margin hacks).
+ * sticky keeps toggle/sidebar pinned while page scrolls; collapse uses
+ * Django’s .main.shifted only so open/close cannot break layout width.
+ */
+@media (min-width: 768px) {
+  body.cf-admin-theme:not(.dashboard) .toggle-nav-sidebar {
+    position: sticky !important;
+    top: var(--cf-header-h, 64px) !important;
+    align-self: flex-start;
+    height: calc(100vh - var(--cf-header-h, 64px)) !important;
+    max-height: calc(100vh - var(--cf-header-h, 64px)) !important;
+    z-index: 30 !important;
+  }
+
+  body.cf-admin-theme:not(.dashboard) #nav-sidebar {
+    position: sticky !important;
+    top: var(--cf-header-h, 64px) !important;
+    align-self: flex-start;
+    height: calc(100vh - var(--cf-header-h, 64px)) !important;
+    max-height: calc(100vh - var(--cf-header-h, 64px)) !important;
+    overflow: auto !important;
+    z-index: 25 !important;
+    /* Let Django control open/closed margins — do not override left/margin-left */
+  }
+
+  /* When open: ensure visible (Django also sets this via .shifted) */
+  body.cf-admin-theme:not(.dashboard) .main.shifted > #nav-sidebar {
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+
+/* Dashboard: no left nav — full width, no phantom margins */
+body.cf-admin-theme.dashboard #main {
+  display: block;
+}
+
+body.cf-admin-theme.dashboard #content {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto;
+  float: none !important;
+}
+
+/* Kill horizontal page scroll on home / everywhere in theme */
+html.cf-admin-theme-root,
+body.cf-admin-theme {
+  max-width: 100%;
+  overflow-x: hidden !important;
+}
+
+body.cf-admin-theme #container,
+body.cf-admin-theme #main,
+body.cf-admin-theme #content,
+body.cf-admin-theme .cf-dashboard-shell,
+body.cf-admin-theme .cf-dashboard-grid,
+body.cf-admin-theme .cf-dashboard-hero,
+body.cf-admin-theme .cf-app-list {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+body.cf-admin-theme .cf-dashboard-shell,
+body.cf-admin-theme .cf-dashboard-grid {
+  overflow-x: clip;
+}
+
+/* Undo earlier forced width/margin rules that fought Django flex */
+@media (min-width: 768px) {
+  body.cf-admin-theme .main.shifted > #nav-sidebar {
+    margin-left: 0 !important;
+    left: auto !important;
+    flex: 0 0 275px !important;
+    width: 275px !important;
+    max-width: 275px !important;
+  }
+
+  body.cf-admin-theme .main:not(.shifted) > #nav-sidebar {
+    /* Match Django: slide off-screen via negative margin only */
+    visibility: hidden !important;
+    margin-left: -276px !important;
+    left: auto !important;
+  }
+
+  body.cf-admin-theme .main.shifted > #nav-sidebar + .content,
+  body.cf-admin-theme .main:not(.shifted) > #nav-sidebar + .content {
+    /* Let Django nav_sidebar.css max-width rules apply — clear our old overrides */
+    margin-left: 0 !important;
+  }
+}
+
+/* ── Dashboard grid + recent actions fitting ─────────────────────────── */
+body.cf-admin-theme .cf-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
+  gap: 1.25rem;
+  align-items: start;
+  width: 100%;
+}
+
+body.cf-admin-theme .cf-app-list {
+  min-width: 0;
+  width: 100%;
+}
+
+body.cf-admin-theme .cf-dashboard-aside {
+  min-width: 0;
+  width: 100%;
+  position: sticky;
+  top: calc(var(--cf-header-h, 64px) + 0.75rem);
+}
+
+body.cf-admin-theme .cf-recent-module {
+  max-height: calc(100vh - var(--cf-header-h, 64px) - 2rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+body.cf-admin-theme .cf-recent-body {
+  padding: 0.65rem 0.85rem 0.85rem;
+  overflow: auto;
+  min-height: 0;
+}
+
+body.cf-admin-theme .cf-recent-body h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cf-ink-muted);
+}
+
+body.cf-admin-theme .cf-actionlist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body.cf-admin-theme .cf-actionlist li {
+  list-style: none;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--cf-glass-border);
+  overflow: hidden;
+}
+
+body.cf-admin-theme .cf-actionlist li:last-child {
+  border-bottom: none;
+}
+
+body.cf-admin-theme .cf-action-title {
+  display: block;
+  font-weight: 600;
+  color: var(--cf-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+body.cf-admin-theme .cf-recent-empty {
+  color: var(--cf-ink-muted);
+  font-size: 0.88rem;
+  margin: 0.5rem 0 0;
+}
+
+@media (max-width: 1100px) {
+  body.cf-admin-theme .cf-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  body.cf-admin-theme .cf-dashboard-aside {
+    position: static;
+  }
+  body.cf-admin-theme .cf-recent-module {
+    max-height: none;
+  }
+}
+
+/* ── Filter dropdowns ────────────────────────────────────────────────── */
+body.cf-admin-theme #changelist-filter .cf-filter-specs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 0.85rem;
+  padding: 0.65rem 0.85rem 0.85rem;
+  align-items: flex-end;
+}
+
+body.cf-admin-theme .cf-filter-select {
+  flex: 1 1 11rem;
+  min-width: 10rem;
+  max-width: 16rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+body.cf-admin-theme .cf-filter-select-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cf-ink-muted);
+}
+
+body.cf-admin-theme .cf-filter-select-control {
+  width: 100%;
+  border-radius: 0.45rem;
+  border: 1px solid var(--border-color);
+  background: var(--body-bg);
+  color: var(--body-fg);
+  padding: 0.4rem 0.55rem;
+  font: inherit;
+  font-size: 0.88rem;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+}
+
+body.cf-admin-theme .cf-filter-select-control:focus {
+  outline: none;
+  border-color: var(--cf-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cf-accent) 28%, transparent);
+}
+
+/* Hide legacy details list if any filter still renders it */
+body.cf-admin-theme #changelist-filter details > ul {
+  display: none;
+}
+
+/* ── Attendance generate-report page ─────────────────────────────────── */
+body.cf-admin-theme .cf-report-page {
+  max-width: 72rem;
+}
+
+body.cf-admin-theme .cf-report-hero {
+  margin-bottom: 1.25rem;
+}
+
+body.cf-admin-theme .cf-report-hero h1 {
+  margin: 0.15rem 0 0.4rem;
+  font-size: 1.55rem;
+  letter-spacing: -0.02em;
+}
+
+body.cf-admin-theme .cf-report-lead {
+  margin: 0;
+  max-width: 40rem;
+  color: var(--cf-ink-muted);
+  line-height: 1.5;
+}
+
+body.cf-admin-theme .cf-report-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+body.cf-admin-theme .cf-report-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+body.cf-admin-theme .cf-report-panel {
+  border-radius: 0.85rem;
+  border: 1px solid var(--cf-glass-border);
+  background: var(--cf-glass);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 32px rgba(2, 6, 23, 0.08);
+  overflow: hidden;
+}
+
+body.cf-admin-theme .cf-report-panel-head {
+  padding: 0.85rem 1rem 0.65rem;
+  border-bottom: 1px solid var(--cf-glass-border);
+  background: linear-gradient(90deg, rgba(15, 23, 42, 0.92), rgba(30, 27, 75, 0.75));
+  color: #e2e8f0;
+}
+
+body.cf-admin-theme .cf-report-panel-head h2 {
+  margin: 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #67e8f9;
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+body.cf-admin-theme .cf-report-panel-head p {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+body.cf-admin-theme .cf-report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 0.85rem;
+  padding: 0.95rem 1rem 1.05rem;
+}
+
+body.cf-admin-theme .cf-report-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+body.cf-admin-theme .cf-report-field-wide {
+  grid-column: 1 / -1;
+}
+
+body.cf-admin-theme .cf-report-field label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cf-ink-muted);
+  float: none !important;
+  width: auto !important;
+  padding: 0 !important;
+}
+
+body.cf-admin-theme .cf-report-field select,
+body.cf-admin-theme .cf-report-field input[type="text"],
+body.cf-admin-theme .cf-report-field input[type="date"] {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  border-radius: 0.45rem;
+  border: 1px solid var(--border-color);
+  background: var(--body-bg);
+  color: var(--body-fg);
+  padding: 0.45rem 0.55rem;
+  font: inherit;
+}
+
+body.cf-admin-theme .cf-report-field select:focus,
+body.cf-admin-theme .cf-report-field input:focus {
+  outline: none;
+  border-color: var(--cf-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cf-accent) 28%, transparent);
+}
+
+body.cf-admin-theme .cf-report-field .help {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--cf-ink-muted);
+}
+
+body.cf-admin-theme .cf-report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+body.cf-admin-theme .cf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-weight: 700;
+  font-size: 0.88rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  text-decoration: none !important;
+  line-height: 1.2;
+}
+
+body.cf-admin-theme .cf-btn-primary,
+body.cf-admin-theme button.cf-btn-primary {
+  background: linear-gradient(135deg, #0891b2, #7c3aed);
+  color: #f8fafc !important;
+  border: none;
+  box-shadow: 0 8px 22px rgba(8, 145, 178, 0.28);
+}
+
+body.cf-admin-theme .cf-btn-primary:hover {
+  filter: brightness(1.06);
+}
+
+body.cf-admin-theme .cf-btn-ghost {
+  background: transparent;
+  border-color: var(--cf-glass-border);
+  color: var(--cf-ink) !important;
+}
+
+body.cf-admin-theme .cf-btn-ghost:hover {
+  border-color: var(--cf-accent);
+  color: var(--cf-accent) !important;
+}
+
+body.cf-admin-theme .cf-report-preview-wrap {
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  body.cf-admin-theme .cf-report-panels {
+    grid-template-columns: 1fr;
+  }
+  body.cf-admin-theme .cf-report-grid {
+    grid-template-columns: 1fr;
+  }
+  body.cf-admin-theme .cf-account-meta {
+    display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Branding in sticky left nav + report sheet alignment / sign-off
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Topbar brand only on dashboard (no left nav) */
+body.cf-admin-theme:not(.dashboard) #header #branding,
+body.cf-admin-theme:not(.dashboard) .cf-brand-topbar {
+  display: none !important;
+}
+
+body.cf-admin-theme.dashboard .cf-brand-topbar {
+  display: flex !important;
+}
+
+body.cf-admin-theme .cf-top-logo,
+body.cf-admin-theme .cf-nav-logo {
+  width: 2.25rem;
+  height: 2.25rem;
+  object-fit: contain;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+/* Sticky left nav chrome with brand */
+body.cf-admin-theme .cf-nav-brand {
+  padding: 0.85rem 0.75rem 0.65rem;
+  border-bottom: 1px solid var(--cf-nav-border, rgba(148, 163, 184, 0.16));
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.35), transparent);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+body.cf-admin-theme .cf-nav-brand-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-decoration: none !important;
+  color: inherit;
+  min-width: 0;
+}
+
+body.cf-admin-theme .cf-nav-mark {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+body.cf-admin-theme .cf-nav-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+body.cf-admin-theme .cf-nav-brand-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--cf-nav-link, #e0f2fe);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 11.5rem;
+}
+
+body.cf-admin-theme .cf-nav-brand-sub {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--cf-nav-muted, #94a3b8);
+}
+
+/* Sticky left bar: toggle + sidebar pin while content scrolls */
+@media (min-width: 768px) {
+  body.cf-admin-theme:not(.dashboard) #main {
+    align-items: flex-start;
+  }
+
+  body.cf-admin-theme:not(.dashboard) .toggle-nav-sidebar,
+  body.cf-admin-theme:not(.dashboard) #nav-sidebar {
+    position: sticky !important;
+    top: var(--cf-header-h, 64px) !important;
+    align-self: flex-start;
+    max-height: calc(100vh - var(--cf-header-h, 64px)) !important;
+    height: calc(100vh - var(--cf-header-h, 64px)) !important;
+    overflow: auto !important;
+  }
+
+  body.cf-admin-theme:not(.dashboard) #nav-sidebar {
+    display: flex;
+    flex-direction: column;
+  }
+
+  body.cf-admin-theme:not(.dashboard) #nav-sidebar #nav-filter {
+    flex: 0 0 auto;
+  }
+
+  body.cf-admin-theme:not(.dashboard) #nav-sidebar .app-list,
+  body.cf-admin-theme:not(.dashboard) #nav-sidebar > table,
+  body.cf-admin-theme:not(.dashboard) #nav-sidebar .module {
+    flex: 1 1 auto;
+  }
+}
+
+html[data-theme="light"] body.cf-admin-theme .cf-nav-brand {
+  background: linear-gradient(180deg, rgba(8, 145, 178, 0.08), transparent);
+}
+
+html[data-theme="light"] body.cf-admin-theme .cf-nav-brand-title {
+  color: #0f172a;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GMTISP-style shell: sticky #menu + #main-content
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+html.cf-admin-theme-root,
+body.cf-admin-theme {
+  max-width: 100%;
+  overflow-x: hidden !important;
+  height: 100%;
+}
+
+body.cf-admin-theme #container.toggle-menu {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  min-height: 100vh !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  background: transparent !important;
+}
+
+body.cf-admin-theme #container.toggle-menu.no-auth {
+  display: block !important;
+}
+
+/* ── Sticky left menu ─────────────────────────────────────────────────── */
+body.cf-admin-theme #menu.cf-menu {
+  --cf-menu-w: 17.5rem;
+  --cf-menu-w-collapsed: 4.5rem;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  z-index: 50;
+  width: var(--cf-menu-w);
+  min-width: var(--cf-menu-w);
+  max-width: var(--cf-menu-w);
+  height: 100vh;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      420px 220px at var(--cf-mx, 30%) var(--cf-my, 10%),
+      rgba(34, 211, 238, 0.12),
+      transparent 55%
+    ),
+    linear-gradient(180deg, #070b14 0%, #0b1220 55%, #111827 100%);
+  border-right: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: 8px 0 32px rgba(2, 6, 23, 0.28);
+  color: #e2e8f0;
+  transition: width 0.2s ease, min-width 0.2s ease, max-width 0.2s ease,
+    transform 0.2s ease;
+}
+
+html[data-theme="light"] body.cf-admin-theme #menu.cf-menu {
+  background:
+    radial-gradient(
+      420px 220px at var(--cf-mx, 30%) var(--cf-my, 10%),
+      rgba(8, 145, 178, 0.12),
+      transparent 55%
+    ),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f9 100%);
+  color: #0f172a;
+  border-right-color: rgba(15, 23, 42, 0.1);
+  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.06);
+}
+
+body.cf-admin-theme #menu .menu-bar {
+  flex: 0 0 auto;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+body.cf-admin-theme #menu .menu-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.5rem 0 1rem;
+}
+
+body.cf-admin-theme #menu .cf-nav-brand {
+  padding: 1rem 0.9rem;
+  border-bottom: none;
+  background: transparent;
+  position: static;
+}
+
+body.cf-admin-theme #menu .cf-menu-filter,
+body.cf-admin-theme #menu #nav-filter {
+  display: block;
+  width: calc(100% - 1.2rem);
+  margin: 0.35rem 0.6rem 0.75rem;
+  box-sizing: border-box;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.45);
+  color: #e2e8f0;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+html[data-theme="light"] body.cf-admin-theme #menu .cf-menu-filter,
+html[data-theme="light"] body.cf-admin-theme #menu #nav-filter {
+  background: #fff;
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+body.cf-admin-theme #menu .module {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  backdrop-filter: none !important;
+  margin: 0 0 0.35rem !important;
+}
+
+body.cf-admin-theme #menu .module caption,
+body.cf-admin-theme #menu .module > h2 {
+  background: transparent !important;
+  color: #67e8f9 !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12) !important;
+  border-radius: 0 !important;
+  text-align: left !important;
+  padding: 0.45rem 0.9rem !important;
+  font-size: 0.68rem !important;
+  letter-spacing: 0.08em;
+}
+
+html[data-theme="light"] body.cf-admin-theme #menu .module caption,
+html[data-theme="light"] body.cf-admin-theme #menu .module > h2 {
+  color: #0e7490 !important;
+}
+
+body.cf-admin-theme #menu a,
+body.cf-admin-theme #menu a:link,
+body.cf-admin-theme #menu a:visited {
+  color: #e2e8f0 !important;
+  text-decoration: none !important;
+}
+
+html[data-theme="light"] body.cf-admin-theme #menu a,
+html[data-theme="light"] body.cf-admin-theme #menu a:link,
+html[data-theme="light"] body.cf-admin-theme #menu a:visited {
+  color: #0f172a !important;
+}
+
+body.cf-admin-theme #menu a:hover,
+body.cf-admin-theme #menu .cf-nav-current {
+  color: #67e8f9 !important;
+}
+
+body.cf-admin-theme #menu .cf-nav-current-row,
+body.cf-admin-theme #menu .current-model {
+  background: rgba(34, 211, 238, 0.12) !important;
+  border-left: 3px solid #22d3ee !important;
+}
+
+body.cf-admin-theme #menu th,
+body.cf-admin-theme #menu td {
+  background: transparent !important;
+  border: none !important;
+  color: inherit !important;
+}
+
+body.cf-admin-theme #menu table {
+  width: 100%;
+}
+
+/* Collapsed desktop menu: icon / brand only */
+body.cf-admin-theme #container.menu-collapsed #menu.cf-menu {
+  width: var(--cf-menu-w-collapsed);
+  min-width: var(--cf-menu-w-collapsed);
+  max-width: var(--cf-menu-w-collapsed);
+}
+
+body.cf-admin-theme #container.menu-collapsed #menu .cf-nav-brand-text,
+body.cf-admin-theme #container.menu-collapsed #menu .cf-menu-filter,
+body.cf-admin-theme #container.menu-collapsed #menu #nav-filter,
+body.cf-admin-theme #container.menu-collapsed #menu .cf-menu-apps,
+body.cf-admin-theme #container.menu-collapsed #menu .menu-body {
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+body.cf-admin-theme #container.menu-collapsed #menu .cf-nav-brand {
+  display: flex;
+  justify-content: center;
+  padding: 0.85rem 0.35rem;
+}
+
+body.cf-admin-theme #container.menu-collapsed #menu .cf-nav-brand-link {
+  justify-content: center;
+}
+
+/* ── Main content column ─────────────────────────────────────────────── */
+body.cf-admin-theme #main-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
+
+body.cf-admin-theme #main-content.no-menu,
+body.cf-admin-theme #main-content.m-0 {
+  margin: 0 !important;
+  width: 100%;
+}
+
+body.cf-admin-theme #header.cf-topbar,
+body.cf-admin-theme #header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 1rem 0.55rem 0.75rem !important;
+  width: 100%;
+  box-sizing: border-box;
+  float: none !important;
+}
+
+body.cf-admin-theme .cf-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+body.cf-admin-theme #ow-user-tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+body.cf-admin-theme .cf-menu-toggle {
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 0.55rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(15, 23, 42, 0.35);
+  color: #e2e8f0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+body.cf-admin-theme .cf-menu-toggle:hover {
+  border-color: rgba(34, 211, 238, 0.55);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.12);
+}
+
+body.cf-admin-theme .cf-menu-toggle-icon,
+body.cf-admin-theme .cf-menu-toggle-icon::before,
+body.cf-admin-theme .cf-menu-toggle-icon::after {
+  display: block;
+  width: 1rem;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
+  position: relative;
+}
+
+body.cf-admin-theme .cf-menu-toggle-icon::before,
+body.cf-admin-theme .cf-menu-toggle-icon::after {
+  content: "";
+  position: absolute;
+  left: 0;
+}
+
+body.cf-admin-theme .cf-menu-toggle-icon::before {
+  top: -5px;
+}
+
+body.cf-admin-theme .cf-menu-toggle-icon::after {
+  top: 5px;
+}
+
+body.cf-admin-theme #main {
+  display: block !important;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+body.cf-admin-theme #main > .content {
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 var(--cf-page-gutter, 0.5rem) 1.25rem;
+  box-sizing: border-box;
+}
+
+body.cf-admin-theme #content {
+  max-width: 100%;
+  float: none !important;
+  width: auto !important;
+}
+
+body.cf-admin-theme .title-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+body.cf-admin-theme .title-wrapper h1 {
+  margin: 0;
+}
+
+body.cf-admin-theme .title-wrapper .object-tools {
+  float: none !important;
+  margin: 0 !important;
+}
+
+/* Hide legacy Django nav_sidebar remnants if any */
+body.cf-admin-theme #nav-sidebar,
+body.cf-admin-theme .toggle-nav-sidebar {
+  display: none !important;
+}
+
+/* Backdrop (mobile drawer) */
+body.cf-admin-theme .menu-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.55);
+  z-index: 45;
+}
+
+@media (max-width: 900px) {
+  body.cf-admin-theme #menu.cf-menu {
+    position: fixed;
+    left: 0;
+    top: 0;
+    transform: translateX(-105%);
+    z-index: 60;
+  }
+
+  body.cf-admin-theme #container.menu-open-mobile #menu.cf-menu {
+    transform: translateX(0);
+    width: min(18rem, 86vw);
+    min-width: min(18rem, 86vw);
+    max-width: min(18rem, 86vw);
+  }
+
+  body.cf-admin-theme #container.menu-open-mobile .menu-backdrop {
+    display: block;
+  }
+
+  body.cf-admin-theme #container.menu-collapsed #menu .cf-nav-brand-text,
+  body.cf-admin-theme #container.menu-collapsed #menu .menu-body {
+    /* On mobile open drawer always show full content */
+  }
+
+  body.cf-admin-theme #container.menu-open-mobile.menu-collapsed #menu .cf-nav-brand-text,
+  body.cf-admin-theme #container.menu-open-mobile #menu .cf-nav-brand-text,
+  body.cf-admin-theme #container.menu-open-mobile #menu .menu-body {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+}
+
+/* Login / unauth: no menu column */
+body.cf-admin-theme.login #container.toggle-menu,
+body.cf-admin-theme #container.no-auth {
+  display: block !important;
+}
+
+body.cf-admin-theme.login #menu,
+body.cf-admin-theme #container.no-auth #menu {
+  display: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Layout polish: unified header/menu-bar height, page gutters, filter arrows
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root,
+html[data-theme="light"],
+html[data-theme="dark"] {
+  --cf-page-gutter: 0.25rem;
+  --cf-topbar-h: 3.5rem;
+}
+
+/* Shared height + background for topbar and left brand strip */
+body.cf-admin-theme #header.cf-topbar,
+body.cf-admin-theme #header {
+  min-height: var(--cf-topbar-h) !important;
+  height: var(--cf-topbar-h);
+  padding-left: var(--cf-page-gutter) !important;
+  padding-right: var(--cf-page-gutter) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  box-sizing: border-box;
+}
+
+body.cf-admin-theme #menu .menu-bar,
+body.cf-admin-theme #menu .cf-nav-brand {
+  min-height: var(--cf-topbar-h);
+  height: var(--cf-topbar-h);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Match menu-bar fill to topbar gradient */
+body.cf-admin-theme #menu .menu-bar {
+  background:
+    radial-gradient(
+      600px 180px at var(--cf-mx, 70%) var(--cf-my, 30%),
+      rgba(34, 211, 238, 0.18),
+      transparent 55%
+    ),
+    var(--cf-header-grad) !important;
+  border-bottom: 1px solid rgba(103, 232, 249, 0.18);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
+body.cf-admin-theme #menu .cf-nav-brand {
+  width: 100%;
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+  background: transparent !important;
+  border-bottom: none !important;
+}
+
+body.cf-admin-theme #menu .cf-nav-brand-title {
+  color: #f8fafc !important;
+}
+
+body.cf-admin-theme #menu .cf-nav-brand-sub {
+  color: #94a3b8 !important;
+}
+
+/* Consistent horizontal gutters for main content (match header) */
+body.cf-admin-theme #main > .content {
+  padding-left: var(--cf-page-gutter) !important;
+  padding-right: var(--cf-page-gutter) !important;
+}
+
+body.cf-admin-theme .breadcrumbs {
+  padding-left: var(--cf-page-gutter) !important;
+  padding-right: var(--cf-page-gutter) !important;
+}
+
+body.cf-admin-theme #content,
+body.cf-admin-theme #content-main,
+body.cf-admin-theme .cf-dashboard-shell,
+body.cf-admin-theme .module,
+body.cf-admin-theme #changelist,
+body.cf-admin-theme .cf-report-page {
+  box-sizing: border-box;
+}
+
+/* Object tools: single row under title, no float chaos */
+body.cf-admin-theme .object-tools {
+  float: none !important;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.85rem !important;
+  padding: 0;
+  justify-content: flex-end;
+}
+
+body.cf-admin-theme .title-wrapper + #content-main .object-tools,
+body.cf-admin-theme #content-main > .object-tools {
+  margin-top: -0.25rem;
+}
+
+/* ── Filter strip with arrows (no page overflow) ─────────────────────── */
+body.cf-admin-theme #changelist-filter .cf-filter-scroll,
+body.cf-admin-theme .cf-filter-scroll {
+  display: flex;
+  align-items: stretch;
+  gap: 0.35rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.55rem 0.5rem 0.75rem;
+}
+
+body.cf-admin-theme .cf-filter-arrow {
+  flex: 0 0 2rem;
+  width: 2rem;
+  border-radius: 0.45rem;
+  border: 1px solid var(--cf-glass-border, rgba(148, 163, 184, 0.2));
+  background: var(--body-bg, #fff);
+  color: var(--body-fg, #111);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  height: 2.35rem;
+  padding: 0;
+}
+
+body.cf-admin-theme .cf-filter-arrow:hover:not(:disabled):not(.is-disabled) {
+  border-color: var(--cf-accent, #22d3ee);
+  color: var(--cf-accent, #0e7490);
+}
+
+body.cf-admin-theme .cf-filter-arrow:disabled,
+body.cf-admin-theme .cf-filter-arrow.is-disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+body.cf-admin-theme #changelist-filter .cf-filter-specs,
+body.cf-admin-theme .cf-filter-specs[data-cf-filter-track] {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 0.65rem 0.75rem;
+  align-items: flex-end;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scroll-behavior: smooth;
+  padding: 0.15rem 0.15rem 0.35rem !important;
+  /* Hide scrollbar; arrows control scroll */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+body.cf-admin-theme #changelist-filter .cf-filter-specs::-webkit-scrollbar,
+body.cf-admin-theme .cf-filter-specs[data-cf-filter-track]::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+body.cf-admin-theme .cf-filter-select {
+  flex: 0 0 auto !important;
+  min-width: 10.5rem;
+  max-width: 14rem;
+  width: 12.5rem;
+}
+
+/* Prevent filter module from expanding page width */
+body.cf-admin-theme #changelist-filter.cf-changelist-filter-top,
+body.cf-admin-theme #changelist.cf-filters-top #changelist-filter {
+  max-width: 100% !important;
+  overflow: hidden !important;
+  box-sizing: border-box;
+}
+
+body.cf-admin-theme #changelist.cf-filters-top .changelist-form-container,
+body.cf-admin-theme #changelist.filtered .cf-changelist-stack {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Import attendance page tweaks */
+body.cf-admin-theme .cf-import-panels {
+  grid-template-columns: 1fr;
+}
+@media (min-width: 900px) {
+  body.cf-admin-theme .cf-import-panels {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+body.cf-admin-theme .cf-file-input {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.45rem;
+  border: 1px dashed var(--border-color);
+  background: var(--body-bg);
+  color: var(--body-fg);
+}

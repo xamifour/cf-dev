@@ -101,6 +101,24 @@ def build_sheet_from_records(
             zone_name = "Multiple zones"
         else:
             zone_name = ""
+
+    # Zone leader name (for LEADER NAME header) when not supplied explicitly.
+    leader_name = coordinator_name or ""
+    if records and not leader_name:
+        zone_leaders: set[str] = set()
+        for r in records:
+            zone = getattr(r, "zone", None)
+            if zone is None:
+                continue
+            leader = getattr(zone, "leader", None)
+            if leader is not None:
+                zone_leaders.add(str(leader).strip())
+        zone_leaders.discard("")
+        if len(zone_leaders) == 1:
+            leader_name = next(iter(zone_leaders))
+        elif len(zone_leaders) > 1:
+            leader_name = "Multiple leaders"
+
     if records and not report_title:
         events = {
             (r.event.title if getattr(r, "event_id", None) else None) for r in records
@@ -239,7 +257,9 @@ def build_sheet_from_records(
         "assembly_name": assembly_name or "Assembly",
         "zone_name": zone_name or "—",
         "report_title": report_title or "Attendance report",
-        "coordinator_name": coordinator_name or "",
+        # leader_name is the preferred key (from Zone.leader); coordinator_name kept for compat.
+        "leader_name": leader_name or "",
+        "coordinator_name": leader_name or coordinator_name or "",
         "week_labels": labels,
         "rows": rows,
         "week_totals": week_totals,

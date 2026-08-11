@@ -14,24 +14,3 @@
   </li>
   {{ block.super }}
 {% endblock %}
-
-{% block content %}
-  {# Prominent actions — not only object-tools (easy to miss) #}
-  <div class="module" style="margin-bottom:1rem;padding:0.75rem 1rem;">
-    <strong style="margin-right:1rem;">{% trans "Attendance tools" %}:</strong>
-    <a href="{{ generate_report_url }}" class="button" style="margin-right:0.5rem;">
-      {% trans "Generate report / preview" %}
-    </a>
-    <a href="{{ import_excel_url }}" class="button">
-      {% trans "Import from Excel" %}
-    </a>
-    <p class="help" style="margin:0.5rem 0 0;">
-      {% blocktrans %}
-      Enter MA/FA counts on each attendance record’s <strong>Attendance seat</strong>
-      section (bottom of the record form). Preview builds the Excel-style week sheet
-      from those records.
-      {% endblocktrans %}
-    </p>
-  </div>
-  {{ block.super }}
-{% endblock %}

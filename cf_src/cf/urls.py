@@ -47,4 +47,4 @@ if settings.DEBUG:
 
 admin.site.site_header = "CF Church Administration"
 admin.site.site_title = "CF Admin"
-admin.site.index_title = "Church Management"
+admin.site.index_title = "Command centre"

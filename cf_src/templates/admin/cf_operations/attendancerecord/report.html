@@ -16,152 +16,179 @@
 {% endblock %}
 
 {% block content %}
-<h1>{% trans "Generate attendance report" %}</h1>
-<p class="help">
-  {% blocktrans %}
-  The sheet is built live from <strong>attendance records</strong> and their
-  seats (MA/FA/…). Filter by scope and calendar, then generate to preview/print.
-  {% endblocktrans %}
-</p>
+<div class="cf-report-page">
+  <header class="cf-report-hero">
+    <div>
+      <p class="cf-kicker">{% trans "Attendance" %}</p>
+      <h1>{% trans "Generate attendance report" %}</h1>
+      <p class="cf-report-lead">
+        {% blocktrans %}
+        The sheet is built live from <strong>attendance records</strong> and their
+        seats (MA/FA/…). Choose scope and calendar filters, then generate to preview or print.
+        {% endblocktrans %}
+      </p>
+    </div>
+  </header>
 
-<form method="get" class="module aligned attendance-report-filters" style="margin-bottom:1.5rem;padding:1rem;">
-  <fieldset class="module aligned">
-    <h2>{% trans "Scope" %}</h2>
-    <div class="form-row">
-      <label for="id_branch">{% trans "Branch" %}</label>
-      <select name="branch" id="id_branch">
-        <option value="">{% trans "All (in your scope)" %}</option>
-        {% for b in branches %}
-        <option value="{{ b.pk }}" {% if filters.branch == b.pk|stringformat:"s" %}selected{% endif %}>
-          {{ b.organization }} — {{ b.name }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="form-row">
-      <label for="id_event">{% trans "Event" %}</label>
-      <select name="event" id="id_event">
-        <option value="">{% trans "All events" %}</option>
-        {% for e in events %}
-        <option value="{{ e.pk }}" {% if filters.event == e.pk|stringformat:"s" %}selected{% endif %}>
-          {{ e.title }} ({{ e.branch }})
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="form-row">
-      <label for="id_session">{% trans "Session" %}</label>
-      <select name="session" id="id_session">
-        <option value="">{% trans "All sessions" %}</option>
-        {% for s in sessions %}
-        <option value="{{ s.pk }}" {% if filters.session == s.pk|stringformat:"s" %}selected{% endif %}>
-          {{ s }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="form-row">
-      <label for="id_zone">{% trans "Zone" %}</label>
-      <select name="zone" id="id_zone">
-        <option value="">{% trans "All zones" %}</option>
-        {% for z in zones %}
-        <option value="{{ z.pk }}" {% if filters.zone == z.pk|stringformat:"s" %}selected{% endif %}>
-          {{ z }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="form-row">
-      <label for="id_subgroup">{% trans "Sub group" %}</label>
-      <select name="subgroup" id="id_subgroup">
-        <option value="">{% trans "All sub groups" %}</option>
-        {% for g in subgroups %}
-        <option value="{{ g.pk }}" {% if filters.subgroup == g.pk|stringformat:"s" %}selected{% endif %}>
-          {{ g }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="form-row">
-      <label for="id_week">{% trans "Week (sheet column)" %}</label>
-      <select name="week" id="id_week">
-        <option value="">{% trans "All weeks" %}</option>
-        {% for val, label in week_choices %}
-        <option value="{{ val }}" {% if filters.week == val|stringformat:"s" %}selected{% endif %}>
-          {% trans "Week" %} {{ label }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-  </fieldset>
+  <form method="get" class="cf-report-form">
+    <div class="cf-report-panels">
+      <section class="cf-report-panel" aria-labelledby="cf-report-scope-title">
+        <header class="cf-report-panel-head">
+          <h2 id="cf-report-scope-title">{% trans "Scope" %}</h2>
+          <p>{% trans "Where the attendance was taken." %}</p>
+        </header>
+        <div class="cf-report-grid">
+          <div class="cf-report-field">
+            <label for="id_branch">{% trans "Branch" %}</label>
+            <select name="branch" id="id_branch">
+              <option value="">{% trans "All (in your scope)" %}</option>
+              {% for b in branches %}
+              <option value="{{ b.pk }}" {% if filters.branch == b.pk|stringformat:"s" %}selected{% endif %}>
+                {{ b.organization }} — {{ b.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="cf-report-field">
+            <label for="id_event">{% trans "Event" %}</label>
+            <select name="event" id="id_event">
+              <option value="">{% trans "All events" %}</option>
+              {% for e in events %}
+              <option value="{{ e.pk }}" {% if filters.event == e.pk|stringformat:"s" %}selected{% endif %}>
+                {{ e.title }} ({{ e.branch }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="cf-report-field">
+            <label for="id_session">{% trans "Session" %}</label>
+            <select name="session" id="id_session">
+              <option value="">{% trans "All sessions" %}</option>
+              {% for s in sessions %}
+              <option value="{{ s.pk }}" {% if filters.session == s.pk|stringformat:"s" %}selected{% endif %}>
+                {{ s }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="cf-report-field">
+            <label for="id_zone">{% trans "Zone" %}</label>
+            <select name="zone" id="id_zone">
+              <option value="">{% trans "All zones" %}</option>
+              {% for z in zones %}
+              <option value="{{ z.pk }}" {% if filters.zone == z.pk|stringformat:"s" %}selected{% endif %}>
+                {{ z }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="cf-report-field">
+            <label for="id_subgroup">{% trans "Sub group" %}</label>
+            <select name="subgroup" id="id_subgroup">
+              <option value="">{% trans "All sub groups" %}</option>
+              {% for g in subgroups %}
+              <option value="{{ g.pk }}" {% if filters.subgroup == g.pk|stringformat:"s" %}selected{% endif %}>
+                {{ g }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="cf-report-field">
+            <label for="id_week">{% trans "Week (sheet column)" %}</label>
+            <select name="week" id="id_week">
+              <option value="">{% trans "All weeks" %}</option>
+              {% for val, label in week_choices %}
+              <option value="{{ val }}" {% if filters.week == val|stringformat:"s" %}selected{% endif %}>
+                {% trans "Week" %} {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </section>
 
-  <fieldset class="module aligned">
-    <h2>{% trans "Calendar" %}</h2>
-    <div class="form-row">
-      <label for="id_month">{% trans "Month" %}</label>
-      <select name="month" id="id_month">
-        <option value="">{% trans "All months" %}</option>
-        {% for val, label in month_choices %}
-        <option value="{{ val }}" {% if filters.month == val|stringformat:"s" %}selected{% endif %}>
-          {{ label }}
-        </option>
-        {% endfor %}
-      </select>
+      <section class="cf-report-panel" aria-labelledby="cf-report-cal-title">
+        <header class="cf-report-panel-head">
+          <h2 id="cf-report-cal-title">{% trans "Calendar" %}</h2>
+          <p>{% trans "When the attendance was taken." %}</p>
+        </header>
+        <div class="cf-report-grid">
+          <div class="cf-report-field">
+            <label for="id_month">{% trans "Month" %}</label>
+            <select name="month" id="id_month">
+              <option value="">{% trans "All months" %}</option>
+              {% for val, label in month_choices %}
+              <option value="{{ val }}" {% if filters.month == val|stringformat:"s" %}selected{% endif %}>
+                {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="cf-report-field">
+            <label for="id_year">{% trans "Year" %}</label>
+            <select name="year" id="id_year">
+              <option value="">{% trans "All years" %}</option>
+              {% for y in years %}
+              <option value="{{ y }}" {% if filters.year == y|stringformat:"s" %}selected{% endif %}>
+                {{ y }}
+              </option>
+              {% endfor %}
+            </select>
+            {% if not years %}
+            <p class="help">{% trans "Tip: set attendance date/time on records to enable year filter." %}</p>
+            {% endif %}
+          </div>
+          <div class="cf-report-field">
+            <label for="id_date">{% trans "Exact date" %}</label>
+            <input type="date" name="date" id="id_date" value="{{ filters.date }}">
+          </div>
+          <div class="cf-report-field">
+            <label for="id_date_from">{% trans "Date from" %}</label>
+            <input type="date" name="date_from" id="id_date_from" value="{{ filters.date_from }}">
+          </div>
+          <div class="cf-report-field">
+            <label for="id_date_to">{% trans "Date to" %}</label>
+            <input type="date" name="date_to" id="id_date_to" value="{{ filters.date_to }}">
+          </div>
+          <div class="cf-report-field">
+            <label for="id_weekday">{% trans "Day of week" %}</label>
+            <select name="weekday" id="id_weekday">
+              <option value="">{% trans "Any day" %}</option>
+              {% for val, label in weekday_choices %}
+              <option value="{{ val }}" {% if filters.weekday == val|stringformat:"s" %}selected{% endif %}>
+                {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+            <p class="help">{% trans "Uses the record’s attendance date/time." %}</p>
+          </div>
+          <div class="cf-report-field cf-report-field-wide">
+            <label for="id_location_provider">{% trans "Location provider" %}</label>
+            <input type="text" name="location_provider" id="id_location_provider"
+                   value="{{ filters.location_provider }}" maxlength="255"
+                   placeholder="{% trans 'contains…' %}">
+          </div>
+        </div>
+      </section>
     </div>
-    <div class="form-row">
-      <label for="id_year">{% trans "Year" %}</label>
-      <select name="year" id="id_year">
-        <option value="">{% trans "All years" %}</option>
-        {% for y in years %}
-        <option value="{{ y }}" {% if filters.year == y|stringformat:"s" %}selected{% endif %}>
-          {{ y }}
-        </option>
-        {% endfor %}
-      </select>
-      {% if not years %}
-      <p class="help">{% trans "Tip: set attendance date/time on records to enable year filter." %}</p>
+
+    <div class="cf-report-actions">
+      <button type="submit" class="cf-btn cf-btn-primary">{% trans "Generate" %}</button>
+      <a class="cf-btn cf-btn-ghost" href="?all=1">{% trans "Show all in scope" %}</a>
+      {% if generated and download_query is not None %}
+      <a class="cf-btn cf-btn-ghost" href="?{% if download_query %}{{ download_query }}&amp;{% endif %}download=xlsx">{% trans "Download Excel" %}</a>
+      <a class="cf-btn cf-btn-ghost" href="?{% if download_query %}{{ download_query }}&amp;{% endif %}download=pdf">{% trans "Download PDF" %}</a>
       {% endif %}
+      <a class="cf-btn cf-btn-ghost" href="{% url 'admin:cf_operations_attendancerecord_changelist' %}">
+        {% trans "Back to records" %}
+      </a>
     </div>
-    <div class="form-row">
-      <label for="id_date">{% trans "Exact date" %}</label>
-      <input type="date" name="date" id="id_date" value="{{ filters.date }}">
-    </div>
-    <div class="form-row">
-      <label for="id_date_from">{% trans "Date from" %}</label>
-      <input type="date" name="date_from" id="id_date_from" value="{{ filters.date_from }}">
-    </div>
-    <div class="form-row">
-      <label for="id_date_to">{% trans "Date to" %}</label>
-      <input type="date" name="date_to" id="id_date_to" value="{{ filters.date_to }}">
-    </div>
-    <div class="form-row">
-      <label for="id_weekday">{% trans "Day of week" %}</label>
-      <select name="weekday" id="id_weekday">
-        <option value="">{% trans "Any day" %}</option>
-        {% for val, label in weekday_choices %}
-        <option value="{{ val }}" {% if filters.weekday == val|stringformat:"s" %}selected{% endif %}>
-          {{ label }}
-        </option>
-        {% endfor %}
-      </select>
-      <p class="help">{% trans "Uses the record’s attendance date/time." %}</p>
-    </div>
-    <div class="form-row">
-      <label for="id_location_provider">{% trans "Location provider" %}</label>
-      <input type="text" name="location_provider" id="id_location_provider"
-             value="{{ filters.location_provider }}" maxlength="255"
-             placeholder="{% trans 'contains…' %}">
-    </div>
-  </fieldset>
+  </form>
 
-  <div class="submit-row">
-    <input type="submit" class="default" value="{% trans 'Generate' %}">
-    <a class="button" href="?all=1">{% trans "Show all in scope" %}</a>
-    <a href="{% url 'admin:cf_operations_attendancerecord_changelist' %}" class="button">{% trans "Back to records" %}</a>
-  </div>
-</form>
-
-{% if generated %}
-  {% include "admin/cf_operations/attendancerecord/_sheet_preview.html" with attendance_sheet=attendance_sheet %}
-{% endif %}
+  {% if generated %}
+  <section class="cf-report-preview-wrap">
+    {% include "admin/cf_operations/attendancerecord/_sheet_preview.html" with attendance_sheet=attendance_sheet download_query=download_query %}
+  </section>
+  {% endif %}
+</div>
 {% endblock %}

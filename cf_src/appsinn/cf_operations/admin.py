@@ -10,6 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from cf_users.multitenancy import MultitenantAdminMixin, MultitenantBranchFilter
 from cf_users.utils import BaseAdmin
 
+from .attendance_export import export_sheet_pdf, export_sheet_xlsx
 from .attendance_import import import_attendance_from_excel
 from .attendance_report import build_sheet_from_records
 from .models import (
@@ -526,6 +527,16 @@ class AttendanceRecordAdmin(MultitenantAdminMixin, BaseAdmin):
         generated = bool(active_filters) or request.GET.get("all") == "1"
         attendance_sheet = None
         filter_summary = ""
+        leader_name = ""
+        if filters["zone"]:
+            zone_obj = (
+                Zone.objects.for_user(request.user)
+                .select_related("leader", "leader__user")
+                .filter(pk=filters["zone"])
+                .first()
+            )
+            if zone_obj is not None and zone_obj.leader_id:
+                leader_name = str(zone_obj.leader)
         if generated:
             bits = []
             if filters["month"]:
@@ -559,8 +570,37 @@ class AttendanceRecordAdmin(MultitenantAdminMixin, BaseAdmin):
                     pass
             filter_summary = " · ".join(bits)
             attendance_sheet = build_sheet_from_records(
-                qs, filter_summary=filter_summary
+                qs,
+                filter_summary=filter_summary,
+                coordinator_name=leader_name,
             )
+
+            # File download (Excel / PDF) using the same filtered sheet.
+            download = (request.GET.get("download") or "").strip().lower()
+            if download in ("xlsx", "excel") and attendance_sheet is not None:
+                from django.http import HttpResponse
+
+                payload = export_sheet_xlsx(attendance_sheet)
+                response = HttpResponse(
+                    payload,
+                    content_type=(
+                        "application/vnd.openxmlformats-officedocument."
+                        "spreadsheetml.sheet"
+                    ),
+                )
+                response["Content-Disposition"] = (
+                    'attachment; filename="attendance_report.xlsx"'
+                )
+                return response
+            if download == "pdf" and attendance_sheet is not None:
+                from django.http import HttpResponse
+
+                payload = export_sheet_pdf(attendance_sheet)
+                response = HttpResponse(payload, content_type="application/pdf")
+                response["Content-Disposition"] = (
+                    'attachment; filename="attendance_report.pdf"'
+                )
+                return response
 
         # Years present in scope (for year dropdown)
         year_values = (
@@ -569,6 +609,11 @@ class AttendanceRecordAdmin(MultitenantAdminMixin, BaseAdmin):
             .dates("attendance_at", "year", order="DESC")
         )
         years = [d.year for d in year_values]
+
+        # Preserve query string for download links (without download param).
+        qs_params = request.GET.copy()
+        qs_params.pop("download", None)
+        download_query = qs_params.urlencode()
 
         context = {
             **self.admin_site.each_context(request),
@@ -594,6 +639,7 @@ class AttendanceRecordAdmin(MultitenantAdminMixin, BaseAdmin):
             ],
             "generated": generated,
             "attendance_sheet": attendance_sheet,
+            "download_query": download_query,
         }
         return render(
             request,
@@ -616,7 +662,8 @@ class AttendanceRecordAdmin(MultitenantAdminMixin, BaseAdmin):
         context = {
             **self.admin_site.each_context(request),
             "opts": self.model._meta,
-            "title": _("Import attendance from Excel"),
+            # Page heading comes from the template hero (avoid duplicate h1).
+            "title": "",
             "branches": branches,
             "events": events,
         }

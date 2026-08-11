@@ -365,3 +365,75 @@ table.attendance-sheet td.empty-hint {
     background: inherit;
   }
 }
+
+/* Title rows left-aligned */
+table.attendance-sheet .sheet-align-left,
+table.attendance-sheet th.sheet-assembly,
+table.attendance-sheet th.sheet-report-title,
+table.attendance-sheet th.sheet-zone,
+table.attendance-sheet th.sheet-meta,
+table.attendance-sheet th.sheet-coord {
+  text-align: left !important;
+}
+
+table.attendance-sheet .sheet-assembly {
+  text-align: left !important;
+}
+
+table.attendance-sheet .sheet-report-title {
+  text-align: left !important;
+}
+
+/* Summary value columns left-aligned */
+table.attendance-sheet td.sheet-summary-value,
+table.attendance-sheet .summary-row td.num.sheet-summary-value {
+  text-align: left !important;
+  padding-left: 12px !important;
+}
+
+table.attendance-sheet .summary-row td.label-cell.sheet-align-left {
+  text-align: left !important;
+}
+
+/* Zonal coordinator sign-off block */
+.cf-coordinator-signoff {
+  margin-top: 1.25rem;
+  padding: 0.85rem 0.25rem 0.25rem;
+  border-top: 1px dashed #c5c5c5;
+}
+
+.cf-coordinator-signoff h3 {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cf-signoff-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.cf-signoff-label {
+  flex: 0 0 5.5rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.cf-signoff-line {
+  flex: 1 1 auto;
+  border-bottom: 1px solid #333;
+  min-height: 1.35rem;
+}
+
+.cf-signoff-line-short {
+  max-width: 14rem;
+}
+
+@media print {
+  .cf-coordinator-signoff {
+    break-inside: avoid;
+  }
+}

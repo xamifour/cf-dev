@@ -43,3 +43,4 @@ django-debug-toolbar
 black
 ruff
 pre-commit
+reportlab>=4.0

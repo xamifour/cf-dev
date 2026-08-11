@@ -1,6 +1,9 @@
 {% extends "admin/base_site.html" %}
 {% load i18n %}
 
+{% block content_title %}{% endblock %}
+{% block content_subtitle %}{% endblock %}
+
 {% block breadcrumbs %}
 <div class="breadcrumbs">
   <a href="{% url 'admin:index' %}">{% trans "Home" %}</a>
@@ -11,47 +14,87 @@
 {% endblock %}
 
 {% block content %}
-<h1>{% trans "Import attendance from Excel" %}</h1>
-<p class="help">
-  {% blocktrans %}
-  Upload an <strong>Attendence.xlsx</strong>-style workbook (.xlsx). Each centre
-  row becomes an <strong>attendance record</strong> linked to an Event under the
-  selected Branch. If a Zone with the same name exists on that branch, it is
-  linked automatically. Use <strong>Generate report</strong> afterwards to view
-  the Excel-style sheet from those records.
-  {% endblocktrans %}
-</p>
+<div class="cf-report-page cf-import-page">
+  <header class="cf-report-hero">
+    <div>
+      <p class="cf-kicker">{% trans "Attendance" %}</p>
+      <h1>{% trans "Import from Excel" %}</h1>
+      <p class="cf-report-lead">
+        {% blocktrans trimmed %}
+        Upload an Attendence.xlsx-style workbook (.xlsx). Each centre row becomes
+        an attendance record under the selected branch. Matching zones are linked
+        when possible. After import, use Generate report to preview the sheet.
+        {% endblocktrans %}
+      </p>
+    </div>
+  </header>
 
-<form method="post" enctype="multipart/form-data" novalidate>
-  {% csrf_token %}
-  <fieldset class="module aligned">
-    <div class="form-row">
-      <label for="id_branch">{% trans "Branch" %}*</label>
-      <select name="branch" id="id_branch" required>
-        <option value="">{% trans "---------" %}</option>
-        {% for b in branches %}
-        <option value="{{ b.pk }}">{{ b.organization }} — {{ b.name }}</option>
-        {% endfor %}
-      </select>
+  <form method="post" enctype="multipart/form-data" class="cf-report-form" novalidate>
+    {% csrf_token %}
+    <div class="cf-report-panels cf-import-panels">
+      <section class="cf-report-panel" aria-labelledby="cf-import-target-title">
+        <header class="cf-report-panel-head">
+          <h2 id="cf-import-target-title">{% trans "Import target" %}</h2>
+          <p>{% trans "Choose where the sheet rows will be stored." %}</p>
+        </header>
+        <div class="cf-report-grid">
+          <div class="cf-report-field">
+            <label for="id_branch">{% trans "Branch" %} *</label>
+            <select name="branch" id="id_branch" required>
+              <option value="">{% trans "Select a branch…" %}</option>
+              {% for b in branches %}
+              <option value="{{ b.pk }}">{{ b.organization }} — {{ b.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="cf-report-field">
+            <label for="id_event">{% trans "Event" %}</label>
+            <select name="event" id="id_event">
+              <option value="">{% trans "Create from sheet title" %}</option>
+              {% for e in events %}
+              <option value="{{ e.pk }}">{{ e.title }} ({{ e.branch }})</option>
+              {% endfor %}
+            </select>
+            <p class="help">
+              {% trans "Leave empty to create a new event from the report title on the sheet." %}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="cf-report-panel" aria-labelledby="cf-import-file-title">
+        <header class="cf-report-panel-head">
+          <h2 id="cf-import-file-title">{% trans "Workbook" %}</h2>
+          <p>{% trans "Excel Workbook (.xlsx) matching the zonal attendance layout." %}</p>
+        </header>
+        <div class="cf-report-grid">
+          <div class="cf-report-field cf-report-field-wide">
+            <label for="id_excel_file">{% trans "Excel file" %} *</label>
+            <input
+              type="file"
+              name="excel_file"
+              id="id_excel_file"
+              class="cf-file-input"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              required
+            >
+            <p class="help">
+              {% trans "Expected: centre names in column B from row 7, week blocks across columns F–AL." %}
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
-    <div class="form-row">
-      <label for="id_event">{% trans "Event (optional)" %}</label>
-      <select name="event" id="id_event">
-        <option value="">{% trans "Create event from sheet title" %}</option>
-        {% for e in events %}
-        <option value="{{ e.pk }}">{{ e.title }} ({{ e.branch }})</option>
-        {% endfor %}
-      </select>
-      <p class="help">{% trans "If empty, an event is created from the report title on the sheet." %}</p>
+
+    <div class="cf-report-actions">
+      <button type="submit" class="cf-btn cf-btn-primary">{% trans "Import" %}</button>
+      <a class="cf-btn cf-btn-ghost" href="{% url 'admin:cf_operations_attendancerecord_changelist' %}">
+        {% trans "Cancel" %}
+      </a>
+      <a class="cf-btn cf-btn-ghost" href="{% url 'admin:cf_operations_attendancerecord_generate_report' %}">
+        {% trans "Generate report" %}
+      </a>
     </div>
-    <div class="form-row">
-      <label for="id_excel_file">{% trans "Excel file (.xlsx)" %}*</label>
-      <input type="file" name="excel_file" id="id_excel_file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
-    </div>
-  </fieldset>
-  <div class="submit-row">
-    <input type="submit" class="default" value="{% trans 'Import' %}">
-    <a href="{% url 'admin:cf_operations_attendancerecord_changelist' %}" class="button cancel-link">{% trans "Cancel" %}</a>
-  </div>
-</form>
+  </form>
+</div>
 {% endblock %}
