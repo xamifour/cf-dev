@@ -1,0 +1,70 @@
+{% extends "cf_social/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="s-layout">
+  <section class="s-col-main">
+    <div class="s-card">
+      <h1 class="s-h1">{% trans "New discussion" %}</h1>
+      <p class="s-meta">{% trans "Choose who can join: everyone on the platform, one organisation, one branch, or one zone." %}</p>
+
+      <form method="post" class="s-form" novalidate>
+        {% csrf_token %}
+        {% if form.errors %}
+        <div class="s-error" role="alert">
+          {% for field, errors in form.errors.items %}
+            {% for error in errors %}<div>{{ error }}</div>{% endfor %}
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="s-field">
+          <label for="{{ form.title.id_for_label }}">{% trans "Title" %}</label>
+          {{ form.title }}
+        </div>
+        <div class="s-field">
+          <label for="{{ form.body.id_for_label }}">{% trans "Opening message" %}</label>
+          {{ form.body }}
+        </div>
+        <div class="s-field">
+          <label for="{{ form.audience.id_for_label }}">{% trans "Audience" %}</label>
+          {{ form.audience }}
+          <p class="s-help">{% trans "Platform = all users · Organisation / Branch / Zone = members of that scope only." %}</p>
+        </div>
+        <div class="s-field s-scope-field" data-scope="ORGANIZATION">
+          <label for="{{ form.organization.id_for_label }}">{% trans "Organisation" %}</label>
+          {{ form.organization }}
+        </div>
+        <div class="s-field s-scope-field" data-scope="BRANCH">
+          <label for="{{ form.branch.id_for_label }}">{% trans "Branch" %}</label>
+          {{ form.branch }}
+        </div>
+        <div class="s-field s-scope-field" data-scope="ZONE">
+          <label for="{{ form.zone.id_for_label }}">{% trans "Zone" %}</label>
+          {{ form.zone }}
+        </div>
+
+        <div class="s-composer-row">
+          <a class="s-btn s-btn-ghost" href="{% url 'cf_social:discussion_list' %}">{% trans "Cancel" %}</a>
+          <button type="submit" class="s-btn s-btn-primary">{% trans "Open discussion" %}</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var audience = document.getElementById("id_audience");
+  if (!audience) return;
+  function sync() {
+    var val = audience.value;
+    document.querySelectorAll(".s-scope-field").forEach(function (el) {
+      el.style.display = el.getAttribute("data-scope") === val ? "" : "none";
+    });
+  }
+  audience.addEventListener("change", sync);
+  sync();
+})();
+</script>
+{% endblock %}

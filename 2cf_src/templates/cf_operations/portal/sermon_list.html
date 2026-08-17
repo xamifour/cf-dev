@@ -1,0 +1,41 @@
+{% extends "cf_operations/portal/base_explore.html" %}
+{% load i18n %}
+
+{% block explore_title %}{% trans "Sermons" %}{% endblock %}
+{% block explore_sub %}
+{% trans "Messages from members and guest speakers across the platform." %}
+{% endblock %}
+
+{% block explore_content %}
+{% if sermons %}
+<div class="c-explore-grid">
+  {% for sermon in sermons %}
+  <article class="c-topic-card c-topic-card-link">
+    <p class="c-card-partner">{{ sermon.get_speaker_display }}</p>
+    <h3><a href="{% url 'cf_operations:sermon_detail' sermon.pk %}">{{ sermon.title }}</a></h3>
+    <p>{% if sermon.scripture_reference %}{{ sermon.scripture_reference }}{% else %}&nbsp;{% endif %}</p>
+    <span class="c-topic-meta">
+      {% if sermon.visibility == "PUBLIC" %}{% trans "Public" %}{% else %}{% trans "Organisation only" %}{% endif %}
+      · {{ sermon.branch }}
+    </span>
+  </article>
+  {% endfor %}
+</div>
+{% if page_obj.has_other_pages %}
+<nav class="c-pagination" aria-label="{% trans 'Pagination' %}">
+  {% if page_obj.has_previous %}
+  <a class="c-btn c-btn-secondary c-btn-sm" href="?page={{ page_obj.previous_page_number }}&q={{ search_q }}">{% trans "Previous" %}</a>
+  {% endif %}
+  <span class="muted">{% blocktrans with n=page_obj.number t=page_obj.paginator.num_pages %}Page {{ n }} of {{ t }}{% endblocktrans %}</span>
+  {% if page_obj.has_next %}
+  <a class="c-btn c-btn-secondary c-btn-sm" href="?page={{ page_obj.next_page_number }}&q={{ search_q }}">{% trans "Next" %}</a>
+  {% endif %}
+</nav>
+{% endif %}
+{% else %}
+<div class="c-empty">
+  <h3>{% trans "No sermons found" %}</h3>
+  <p>{% trans "No public or organisation sermons match your search." %}</p>
+</div>
+{% endif %}
+{% endblock %}

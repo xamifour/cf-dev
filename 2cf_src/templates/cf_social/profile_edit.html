@@ -1,0 +1,22 @@
+{% extends "cf_social/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="s-layout s-layout-narrow">
+  <div class="s-card">
+    <h1 class="s-h1">{% trans "Edit profile & privacy" %}</h1>
+    <form method="post" enctype="multipart/form-data" class="s-form">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="s-field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<p class="s-help">{{ field.help_text }}</p>{% endif %}
+        {{ field.errors }}
+      </div>
+      {% endfor %}
+      <button type="submit" class="s-btn s-btn-primary">{% trans "Save" %}</button>
+      <a class="s-btn s-btn-ghost" href="{% url 'cf_social:profile' username=request.user.username %}">{% trans "Cancel" %}</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

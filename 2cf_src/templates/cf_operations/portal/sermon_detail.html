@@ -1,0 +1,56 @@
+{% extends "cf_operations/portal/base_explore.html" %}
+{% load i18n %}
+
+{% block explore_title %}{{ sermon.title }}{% endblock %}
+{% block explore_sub %}{{ sermon.get_speaker_display }}{% endblock %}
+{% block explore_toolbar %}{% endblock %}
+
+{% block explore_content %}
+<article class="c-detail">
+  <dl class="c-kv">
+    <div>
+      <dt>{% trans "Speaker" %}</dt>
+      <dd>{{ sermon.get_speaker_display }}</dd>
+    </div>
+    <div>
+      <dt>{% trans "Scripture" %}</dt>
+      <dd>{{ sermon.scripture_reference|default:_("—") }}</dd>
+    </div>
+    <div>
+      <dt>{% trans "Branch" %}</dt>
+      <dd>{{ sermon.branch.organization }} · {{ sermon.branch }}</dd>
+    </div>
+    <div>
+      <dt>{% trans "Visibility" %}</dt>
+      <dd>{% if sermon.visibility == "PUBLIC" %}{% trans "Public (platform)" %}{% else %}{% trans "Organisation only" %}{% endif %}</dd>
+    </div>
+    {% if sermon.event %}
+    <div>
+      <dt>{% trans "Event" %}</dt>
+      <dd><a href="{% url 'cf_operations:event_detail' sermon.event.pk %}">{{ sermon.event.title }}</a></dd>
+    </div>
+    {% endif %}
+  </dl>
+
+  {% if sermon.audio_url or sermon.video_url %}
+  <div class="c-prose">
+    <h2>{% trans "Media" %}</h2>
+    <ul class="c-simple-list">
+      {% if sermon.audio_url %}<li><a href="{{ sermon.audio_url }}" target="_blank" rel="noopener">{% trans "Audio" %}</a></li>{% endif %}
+      {% if sermon.video_url %}<li><a href="{{ sermon.video_url }}" target="_blank" rel="noopener">{% trans "Video" %}</a></li>{% endif %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if sermon.notes %}
+  <div class="c-prose">
+    <h2>{% trans "Notes" %}</h2>
+    <p>{{ sermon.notes|linebreaksbr }}</p>
+  </div>
+  {% endif %}
+
+  <p class="c-detail-back">
+    <a class="c-btn c-btn-secondary c-btn-sm" href="{% url 'cf_operations:sermon_list' %}">{% trans "All sermons" %}</a>
+  </p>
+</article>
+{% endblock %}

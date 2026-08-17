@@ -1,0 +1,27 @@
+{% extends "cf_social/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="s-layout s-layout-narrow">
+  <div class="s-card s-chat">
+    <header class="s-chat-head">
+      <a href="{% url 'cf_social:inbox' %}">←</a>
+      <h1>{% if other %}@{{ other.username }}{% else %}{% trans "Chat" %}{% endif %}</h1>
+    </header>
+    <div class="s-chat-thread">
+      {% for m in messages_list %}
+      <div class="s-bubble {% if m.sender_id == request.user.id %}is-mine{% endif %}">
+        <p>{{ m.body|linebreaksbr }}</p>
+        <span class="s-meta">{{ m.created_at|timesince }} {% trans "ago" %}</span>
+      </div>
+      {% empty %}
+      <p class="s-muted">{% trans "Say hello." %}</p>
+      {% endfor %}
+    </div>
+    <form method="post" class="s-chat-compose">
+      {% csrf_token %}
+      {{ form.body }}
+      <button type="submit" class="s-btn s-btn-primary">{% trans "Send" %}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

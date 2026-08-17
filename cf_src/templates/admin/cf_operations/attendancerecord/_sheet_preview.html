@@ -1,6 +1,6 @@
 {% load i18n %}
 {# Shared Excel-layout preview; expects attendance_sheet dict #}
-<div class="attendance-sheet-preview module">
+<div class="attendance-sheet-preview cf-sheet-paper">
   <div class="sheet-toolbar">
     <h2>{% trans "Attendance report" %} <span class="sheet-toolbar-sub">({% trans "from records" %})</span></h2>
     <div class="sheet-toolbar-actions">
@@ -23,31 +23,52 @@
   </div>
 
   <div class="attendance-sheet-scroll">
-    <table class="attendance-sheet">
+    <table class="attendance-sheet is-pinned">
       <thead>
         <tr class="sheet-title-row">
-          <th colspan="45" class="sheet-assembly sheet-align-left">{{ attendance_sheet.assembly_name }}</th>
-        </tr>
-        <tr class="sheet-title-row">
-          <th colspan="45" class="sheet-report-title sheet-align-left">{{ attendance_sheet.report_title }}</th>
-        </tr>
-        <tr class="sheet-title-row">
-          <th colspan="3" class="sheet-zone sheet-align-left">{{ attendance_sheet.zone_name }}</th>
-          <th colspan="42" class="sheet-meta sheet-align-left">
-            {% if attendance_sheet.month_label %}{{ attendance_sheet.month_label }}{% endif %}
-            {% if attendance_sheet.filter_summary %}
-              {% if attendance_sheet.month_label %} · {% endif %}
-              {{ attendance_sheet.filter_summary }}
-            {% endif %}
+          <th colspan="{{ attendance_sheet.colspan|default:5 }}" class="sheet-header-line sheet-org sheet-align-left">
+            {{ attendance_sheet.organization_name|default:attendance_sheet.assembly_name }}
           </th>
         </tr>
+        {% if attendance_sheet.branch_name %}
+        <tr class="sheet-title-row">
+          <th colspan="{{ attendance_sheet.colspan|default:5 }}" class="sheet-header-line sheet-branch sheet-align-left">
+            {{ attendance_sheet.branch_name }}
+          </th>
+        </tr>
+        {% endif %}
+        {% if attendance_sheet.show_zone and attendance_sheet.zone_name %}
+        <tr class="sheet-title-row">
+          <th colspan="{{ attendance_sheet.colspan|default:5 }}" class="sheet-header-line sheet-zone sheet-align-left">
+            {{ attendance_sheet.zone_name }}
+          </th>
+        </tr>
+        {% endif %}
+        {% if attendance_sheet.show_subgroup and attendance_sheet.subgroup_name %}
+        <tr class="sheet-title-row">
+          <th colspan="{{ attendance_sheet.colspan|default:5 }}" class="sheet-header-line sheet-subgroup sheet-align-left">
+            {{ attendance_sheet.subgroup_name }}
+          </th>
+        </tr>
+        {% endif %}
+        {% if attendance_sheet.report_date %}
+        <tr class="sheet-title-row">
+          <th colspan="{{ attendance_sheet.colspan|default:5 }}" class="sheet-header-line sheet-date sheet-align-left">
+            {{ attendance_sheet.report_date }}
+          </th>
+        </tr>
+        {% endif %}
         <tr class="sheet-week-header">
           <th colspan="5" class="sheet-coord sheet-align-left">
             {% trans "LEADER NAME:" %}
             {{ attendance_sheet.leader_name|default:attendance_sheet.coordinator_name|default:"—" }}
           </th>
+          {% for wh in attendance_sheet.week_headers %}
+          <th colspan="8" class="week-label week-{{ wh.number }}">{{ wh.label }}</th>
+          {% empty %}
           {% for label in attendance_sheet.week_labels %}
           <th colspan="8" class="week-label week-{{ forloop.counter }}">{{ label }}</th>
+          {% endfor %}
           {% endfor %}
         </tr>
         <tr class="sheet-col-header">
@@ -57,14 +78,14 @@
           <th>{% trans "ADDRESS" %}</th>
           <th>{% trans "CONTACT" %}</th>
           {% for _ in attendance_sheet.week_labels %}
-          <th title="Male Adult">MA</th>
-          <th title="Female Adult">FA</th>
-          <th title="Male Children">MC</th>
-          <th title="Female Children">FC</th>
-          <th title="Total">T</th>
-          <th title="New Converts">N/C</th>
-          <th title="First Timers">F/T</th>
-          <th title="Testimonies">TS</th>
+          <th class="stat-col" title="Male Adult">MA</th>
+          <th class="stat-col" title="Female Adult">FA</th>
+          <th class="stat-col" title="Male Children">MC</th>
+          <th class="stat-col" title="Female Children">FC</th>
+          <th class="stat-col" title="Total">T</th>
+          <th class="stat-col" title="New Converts">N/C</th>
+          <th class="stat-col" title="First Timers">F/T</th>
+          <th class="stat-col" title="Testimonies">TS</th>
           {% endfor %}
         </tr>
       </thead>
@@ -89,7 +110,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="45" class="empty-hint">
+          <td colspan="{{ attendance_sheet.colspan|default:5 }}" class="empty-hint">
             {% trans "No attendance records match these filters." %}
           </td>
         </tr>
@@ -110,20 +131,20 @@
           {% endfor %}
         </tr>
         <tr class="summary-row">
-          <td colspan="5" class="label-cell sheet-align-left">{% trans "GRAND TOTAL" %}</td>
-          <td colspan="40" class="num grand sheet-summary-value">{{ attendance_sheet.grand.total }}</td>
+          <td colspan="5" class="label-cell">{% trans "GRAND TOTAL" %}</td>
+          <td colspan="{{ attendance_sheet.summary_colspan|default:1 }}" class="num grand sheet-summary-value">{{ attendance_sheet.grand.total }}</td>
         </tr>
         <tr class="summary-row">
-          <td colspan="5" class="label-cell sheet-align-left">{% trans "AVERAGE" %}</td>
-          <td colspan="40" class="num sheet-summary-value">{{ attendance_sheet.average }}</td>
+          <td colspan="5" class="label-cell">{% trans "AVERAGE" %}</td>
+          <td colspan="{{ attendance_sheet.summary_colspan|default:1 }}" class="num sheet-summary-value">{{ attendance_sheet.average }}</td>
         </tr>
         <tr class="summary-row">
-          <td colspan="5" class="label-cell sheet-align-left">{% trans "TOTAL CELLS" %}</td>
-          <td colspan="40" class="num sheet-summary-value">{{ attendance_sheet.total_cells }}</td>
+          <td colspan="5" class="label-cell">{% trans "TOTAL CELLS" %}</td>
+          <td colspan="{{ attendance_sheet.summary_colspan|default:1 }}" class="num sheet-summary-value">{{ attendance_sheet.total_cells }}</td>
         </tr>
         <tr class="summary-row">
-          <td colspan="5" class="label-cell sheet-align-left">{% trans "ACTIVE CELLS" %}</td>
-          <td colspan="40" class="num sheet-summary-value">{{ attendance_sheet.active_cells }}</td>
+          <td colspan="5" class="label-cell">{% trans "ACTIVE CELLS" %}</td>
+          <td colspan="{{ attendance_sheet.summary_colspan|default:1 }}" class="num sheet-summary-value">{{ attendance_sheet.active_cells }}</td>
         </tr>
         {% endif %}
       </tbody>

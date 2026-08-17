@@ -1,0 +1,36 @@
+{% extends "cf_social/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="s-layout s-layout-narrow">
+  <section class="s-col-main">
+    {% include "cf_social/_post_card.html" with post=post liked_by_me=liked_by_me %}
+    <div class="s-card">
+      <h2 class="s-h2">{% trans "Comments" %}</h2>
+      <form method="post" class="s-comment-form">
+        {% csrf_token %}
+        {{ comment_form.body }}
+        <button type="submit" class="s-btn s-btn-primary">{% trans "Comment" %}</button>
+      </form>
+      <ul class="s-comments">
+        {% for c in comments %}
+        <li>
+          <strong><a href="{% url 'cf_social:profile' username=c.author.username %}">{{ c.author.username }}</a></strong>
+          <span class="s-meta">{{ c.created_at|timesince }} {% trans "ago" %}</span>
+          <p>{{ c.body }}</p>
+          {% for r in c.replies.all %}
+          <div class="s-reply">
+            <strong>{{ r.author.username }}</strong>
+            <p>{{ r.body }}</p>
+          </div>
+          {% endfor %}
+        </li>
+        {% empty %}
+        <li class="s-muted">{% trans "No comments yet." %}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <p><a href="{% url 'cf_social:feed' %}">← {% trans "Back to feed" %}</a></p>
+  </section>
+</div>
+{% endblock %}

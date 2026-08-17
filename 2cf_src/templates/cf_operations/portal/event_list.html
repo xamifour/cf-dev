@@ -1,0 +1,56 @@
+{% extends "cf_operations/portal/base_explore.html" %}
+{% load i18n %}
+
+{% block explore_title %}{% trans "Events" %}{% endblock %}
+{% block explore_sub %}
+{% trans "Services, conferences, outreaches, and gatherings visible on the platform." %}
+{% endblock %}
+
+{% block explore_toolbar %}
+<form method="get" class="c-explore-search" role="search">
+  <input type="search" name="q" value="{{ search_q }}" class="c-search-input c-search-input-wide" placeholder="{% trans 'Search events…' %}">
+  <select name="type" class="c-tenant-select" onchange="this.form.submit()" aria-label="{% trans 'Event type' %}">
+    <option value="">{% trans "All types" %}</option>
+    {% for value, label in event_type_choices %}
+    <option value="{{ value }}" {% if active_type == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="c-btn c-btn-primary c-btn-sm">{% trans "Search" %}</button>
+</form>
+{% endblock %}
+
+{% block explore_content %}
+{% if events %}
+<div class="c-explore-grid">
+  {% for event in events %}
+  <article class="c-topic-card c-topic-card-link">
+    <p class="c-card-partner">{{ event.get_event_type_display }} · {{ event.branch }}</p>
+    <h3><a href="{% url 'cf_operations:event_detail' event.pk %}">{{ event.title }}</a></h3>
+    <p>
+      {% if event.start_time %}{{ event.start_time|date:"D, j M Y · H:i" }}{% else %}{% trans "Date TBA" %}{% endif %}
+    </p>
+    <span class="c-topic-meta">
+      {% if event.visibility == "PUBLIC" %}{% trans "Public" %}{% else %}{% trans "Organisation only" %}{% endif %}
+      · {{ event.branch.organization }}
+    </span>
+  </article>
+  {% endfor %}
+</div>
+{% if page_obj.has_other_pages %}
+<nav class="c-pagination" aria-label="{% trans 'Pagination' %}">
+  {% if page_obj.has_previous %}
+  <a class="c-btn c-btn-secondary c-btn-sm" href="?page={{ page_obj.previous_page_number }}&q={{ search_q }}&type={{ active_type }}">{% trans "Previous" %}</a>
+  {% endif %}
+  <span class="muted">{% blocktrans with n=page_obj.number t=page_obj.paginator.num_pages %}Page {{ n }} of {{ t }}{% endblocktrans %}</span>
+  {% if page_obj.has_next %}
+  <a class="c-btn c-btn-secondary c-btn-sm" href="?page={{ page_obj.next_page_number }}&q={{ search_q }}&type={{ active_type }}">{% trans "Next" %}</a>
+  {% endif %}
+</nav>
+{% endif %}
+{% else %}
+<div class="c-empty">
+  <h3>{% trans "No events found" %}</h3>
+  <p>{% trans "There are no public or organisation events matching your filters." %}</p>
+</div>
+{% endif %}
+{% endblock %}

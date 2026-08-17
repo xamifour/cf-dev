@@ -1,0 +1,58 @@
+{% extends "cf_operations/portal/base_explore.html" %}
+{% load i18n %}
+
+{% block explore_title %}{{ event.title }}{% endblock %}
+{% block explore_sub %}
+{{ event.get_event_type_display }} · {{ event.branch.organization }} · {{ event.branch }}
+{% endblock %}
+{% block explore_toolbar %}{% endblock %}
+
+{% block explore_content %}
+<article class="c-detail">
+  <dl class="c-kv">
+    <div>
+      <dt>{% trans "When" %}</dt>
+      <dd>
+        {% if event.start_time %}
+          {{ event.start_time|date:"D, j M Y · H:i" }}
+          {% if event.end_time %}– {{ event.end_time|date:"H:i" }}{% endif %}
+        {% else %}
+          {% trans "To be announced" %}
+        {% endif %}
+      </dd>
+    </div>
+    <div>
+      <dt>{% trans "Visibility" %}</dt>
+      <dd>{% if event.visibility == "PUBLIC" %}{% trans "Public (platform)" %}{% else %}{% trans "Organisation only" %}{% endif %}</dd>
+    </div>
+    <div>
+      <dt>{% trans "Recurrence" %}</dt>
+      <dd>{{ event.get_recurrence_display }}</dd>
+    </div>
+  </dl>
+  {% if event.description %}
+  <div class="c-prose">
+    <h2>{% trans "About" %}</h2>
+    <p>{{ event.description|linebreaksbr }}</p>
+  </div>
+  {% endif %}
+
+  {% if related_sermons %}
+  <div class="c-prose">
+    <h2>{% trans "Sermons at this event" %}</h2>
+    <ul class="c-simple-list">
+      {% for sermon in related_sermons %}
+      <li>
+        <a href="{% url 'cf_operations:sermon_detail' sermon.pk %}">{{ sermon.title }}</a>
+        <span class="muted">— {{ sermon.get_speaker_display }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <p class="c-detail-back">
+    <a class="c-btn c-btn-secondary c-btn-sm" href="{% url 'cf_operations:event_list' %}">{% trans "All events" %}</a>
+  </p>
+</article>
+{% endblock %}

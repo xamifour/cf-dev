@@ -1,0 +1,76 @@
+{% extends "cf_users/portal/base.html" %}
+{% load i18n static %}
+
+{% block body_class %}portal portal-app c-home{% endblock %}
+
+{% block extra_head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+<header class="c-nav" role="banner">
+  <div class="c-nav-inner">
+    <a class="c-logo" href="{% url 'portal_dashboard' %}" aria-label="CF Home">
+      <span class="c-logo-mark">CF</span>
+      <span class="c-logo-text">CF</span>
+    </a>
+    <nav class="c-nav-links" aria-label="{% trans 'Primary' %}">
+      <a href="{% url 'portal_dashboard' %}">{% trans "Home" %}</a>
+      <a href="{% url 'cf_operations:event_list' %}" {% if explore_nav == "events" %}class="is-active"{% endif %}>{% trans "Events" %}</a>
+      <a href="{% url 'cf_operations:sermon_list' %}" {% if explore_nav == "sermons" %}class="is-active"{% endif %}>{% trans "Sermons" %}</a>
+      <a href="{% url 'cf_operations:outreach_list' %}" {% if explore_nav == "outreaches" %}class="is-active"{% endif %}>{% trans "Outreaches" %}</a>
+    </nav>
+    <div class="c-nav-actions c-nav-actions-desktop">
+      {% if is_staff_user %}
+      <a class="c-link-quiet" href="{% url 'admin:index' %}">{% trans "Admin" %}</a>
+      {% endif %}
+      <form method="post" action="{% url 'portal_logout' %}" class="inline-form">
+        {% csrf_token %}
+        <button type="submit" class="c-btn c-btn-ghost">{% trans "Log out" %}</button>
+      </form>
+    </div>
+  </div>
+</header>
+
+<main class="c-main">
+  <section class="c-hero c-hero-compact">
+    <div class="c-container">
+      <p class="c-eyebrow">{% trans "Explore" %}</p>
+      <h1 class="c-hero-title">{% block explore_title %}{{ page_title }}{% endblock %}</h1>
+      <p class="c-hero-sub">
+        {% block explore_sub %}
+        {% trans "Public platform content plus organisation-only items you are authorised to see." %}
+        {% endblock %}
+      </p>
+      {% block explore_toolbar %}
+      <form method="get" class="c-explore-search" role="search">
+        <input
+          type="search"
+          name="q"
+          value="{{ search_q }}"
+          class="c-search-input c-search-input-wide"
+          placeholder="{% trans 'Search…' %}"
+          aria-label="{% trans 'Search' %}"
+        >
+        <button type="submit" class="c-btn c-btn-primary c-btn-sm">{% trans "Search" %}</button>
+      </form>
+      {% endblock %}
+    </div>
+  </section>
+
+  <section class="c-section">
+    <div class="c-container">
+      {% block explore_content %}{% endblock %}
+    </div>
+  </section>
+</main>
+
+<footer class="c-footer">
+  <div class="c-container c-footer-bottom">
+    <span>© {% now "Y" %} CF</span>
+    <a href="{% url 'portal_dashboard' %}">{% trans "Back to dashboard" %}</a>
+  </div>
+</footer>
+{% endblock %}

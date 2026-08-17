@@ -254,7 +254,8 @@ class AttendanceExcelModelTests(OperationsFixturesMixin, TestCase):
         )
         self.assertEqual(sheet["assembly_name"], "KASOA ASSEMBLY")
         self.assertEqual(sheet["zone_name"], "ZONE 13")
-        self.assertEqual(len(sheet["week_labels"]), 5)
+        self.assertEqual(len(sheet["week_labels"]), 1)
+        self.assertEqual(sheet["week_numbers"], [1])
         self.assertEqual(sheet["rows"][0]["centre_name"], "His Presence")
         self.assertEqual(sheet["rows"][0]["weeks"][0]["male_adults"], 3)
         self.assertEqual(sheet["rows"][0]["weeks"][0]["total"], 8)
@@ -288,8 +289,10 @@ class AttendanceExcelModelTests(OperationsFixturesMixin, TestCase):
         sheet = build_sheet_from_records(qs)
         self.assertEqual(sheet["zone_name"], "ZONE 13")
         self.assertEqual(sheet["rows"][0]["zone_name"], "ZONE 13")
-        self.assertEqual(sheet["rows"][0]["weeks"][1]["total"], 2)
-        self.assertEqual(sheet["rows"][0]["weeks"][0]["total"], 0)
+        self.assertEqual(sheet["week_numbers"], [2])
+        self.assertEqual(len(sheet["rows"][0]["weeks"]), 1)
+        self.assertEqual(sheet["rows"][0]["weeks"][0]["total"], 2)
+        self.assertTrue(sheet["week_labels"][0].startswith("WEEK 2"))
 
     def test_attendance_record_event_zone_subgroup(self):
         from cf_people.models import SubBranch, Zone
@@ -356,8 +359,179 @@ class AttendanceExcelModelTests(OperationsFixturesMixin, TestCase):
         self.assertEqual(sheet["rows"][0]["address"], "Hall A")
         self.assertEqual(sheet["rows"][0]["contact"], "+233201111111")
         self.assertEqual(sheet["rows"][0]["code"], "C-01")
-        self.assertEqual(sheet["rows"][0]["weeks"][1]["total"], 5)
+        self.assertEqual(sheet["week_numbers"], [2])
+        self.assertEqual(sheet["rows"][0]["weeks"][0]["total"], 5)
         self.assertEqual(sheet["month_label"], "June")
+
+    def test_sheet_header_scope_and_leader_not_overwritten(self):
+        from types import SimpleNamespace
+
+        from .attendance_report import (
+            build_sheet_from_records,
+            format_report_date,
+            resolve_sheet_header,
+        )
+
+        org = SimpleNamespace(name="City Church", trade_name="", leader="Pastor Org")
+        branch = SimpleNamespace(
+            name="Kasoa Branch", organization=org, leader="Elder Branch"
+        )
+        zone = SimpleNamespace(name="ZONE 13", branch=branch, leader="Coord Zone")
+        subgroup = SimpleNamespace(
+            name="His Presence", zone=zone, branch=branch, leader="Host Cell"
+        )
+
+        org_header = resolve_sheet_header(organization=org, report_date="01 June 2026")
+        self.assertEqual(org_header["organization_name"], "City Church")
+        self.assertEqual(org_header["branch_name"], "")
+        self.assertFalse(org_header["show_zone"])
+        self.assertFalse(org_header["show_subgroup"])
+        self.assertEqual(org_header["leader_name"], "Pastor Org")
+        self.assertEqual(org_header["report_date"], "01 June 2026")
+
+        branch_header = resolve_sheet_header(branch=branch)
+        self.assertEqual(branch_header["organization_name"], "City Church")
+        self.assertEqual(branch_header["branch_name"], "Kasoa Branch")
+        self.assertFalse(branch_header["show_zone"])
+        self.assertEqual(branch_header["leader_name"], "Elder Branch")
+
+        zone_header = resolve_sheet_header(zone=zone)
+        self.assertTrue(zone_header["show_zone"])
+        self.assertEqual(zone_header["zone_name"], "ZONE 13")
+        self.assertFalse(zone_header["show_subgroup"])
+        self.assertEqual(zone_header["leader_name"], "Coord Zone")
+
+        cell_header = resolve_sheet_header(subgroup=subgroup)
+        self.assertTrue(cell_header["show_zone"])
+        self.assertTrue(cell_header["show_subgroup"])
+        self.assertEqual(cell_header["subgroup_name"], "His Presence")
+        self.assertEqual(cell_header["leader_name"], "Host Cell")
+
+        self.assertEqual(
+            format_report_date({"date": "2026-06-15"}),
+            "15 June 2026",
+        )
+        self.assertEqual(
+            format_report_date({"month": "6", "year": "2026"}),
+            "June 2026",
+        )
+
+        event = Event.objects.create(
+            branch=self.branch, title="Header event", event_type="SERVICE"
+        )
+        rec = AttendanceRecord.objects.create(
+            event=event,
+            branch=self.branch,
+            week=1,
+            leader="Row Leader",
+            centre_name="Cell A",
+        )
+        AttendanceSeat.objects.create(record=rec, male_adults=1, female_adults=1)
+        sheet = build_sheet_from_records(
+            AttendanceRecord.objects.filter(pk=rec.pk).select_related("seat"),
+            organization_name="City Church",
+            branch_name="Kasoa Branch",
+            zone_name="ZONE 13",
+            subgroup_name="His Presence",
+            report_date="15 June 2026",
+            show_zone=True,
+            show_subgroup=True,
+            header_leader_name="Coord Zone",
+        )
+        self.assertEqual(sheet["organization_name"], "City Church")
+        self.assertEqual(sheet["branch_name"], "Kasoa Branch")
+        self.assertEqual(sheet["zone_name"], "ZONE 13")
+        self.assertEqual(sheet["subgroup_name"], "His Presence")
+        self.assertEqual(sheet["report_date"], "15 June 2026")
+        self.assertEqual(sheet["leader_name"], "Coord Zone")
+        self.assertEqual(sheet["rows"][0]["leader_name"], "Row Leader")
+
+    def test_week_labels_include_attendance_date(self):
+        from datetime import datetime
+
+        from django.utils import timezone as dj_tz
+
+        from .attendance_report import build_sheet_from_records
+
+        event = Event.objects.create(
+            branch=self.branch, title="Dated weeks", event_type="SERVICE"
+        )
+        w1 = AttendanceRecord.objects.create(
+            event=event,
+            branch=self.branch,
+            week=1,
+            attendance_at=dj_tz.make_aware(datetime(2026, 8, 1, 9, 0)),
+            centre_name="Cell A",
+        )
+        w2 = AttendanceRecord.objects.create(
+            event=event,
+            branch=self.branch,
+            week=2,
+            attendance_at=dj_tz.make_aware(datetime(2026, 8, 8, 9, 0)),
+            centre_name="Cell A",
+        )
+        AttendanceSeat.objects.create(record=w1, male_adults=1)
+        AttendanceSeat.objects.create(record=w2, male_adults=1)
+        sheet = build_sheet_from_records(
+            AttendanceRecord.objects.filter(event=event).select_related("seat")
+        )
+        self.assertEqual(sheet["week_labels"][0], "WEEK 1 - 2026-08-01")
+        self.assertEqual(sheet["week_labels"][1], "WEEK 2 - 2026-08-08")
+        self.assertEqual(len(sheet["week_labels"]), 2)
+        self.assertEqual(sheet["week_numbers"], [1, 2])
+
+    def test_progressive_weeks_omit_empty_rows_and_empty_weeks(self):
+        from .attendance_export import export_sheet_xlsx
+        from .attendance_report import build_sheet_from_records
+
+        event = Event.objects.create(
+            branch=self.branch, title="Week three only", event_type="SERVICE"
+        )
+        empty = AttendanceRecord.objects.create(
+            event=event,
+            branch=self.branch,
+            week=1,
+            centre_name="Empty cell",
+        )
+        rec = AttendanceRecord.objects.create(
+            event=event,
+            branch=self.branch,
+            week=3,
+            centre_name="Active cell",
+        )
+        AttendanceSeat.objects.create(record=rec, male_adults=4, female_adults=1)
+        sheet = build_sheet_from_records(
+            AttendanceRecord.objects.filter(event=event).select_related("seat")
+        )
+        self.assertEqual(len(sheet["rows"]), 1)
+        self.assertEqual(sheet["rows"][0]["centre_name"], "Active cell")
+        self.assertEqual(sheet["week_numbers"], [3])
+        self.assertEqual(len(sheet["week_labels"]), 1)
+        self.assertTrue(sheet["week_labels"][0].startswith("WEEK 3"))
+        self.assertEqual(sheet["rows"][0]["weeks"][0]["male_adults"], 4)
+        self.assertEqual(empty.centre_name, "Empty cell")
+
+        payload = export_sheet_xlsx(sheet)
+        from io import BytesIO
+
+        from openpyxl import load_workbook
+
+        wb = load_workbook(BytesIO(payload))
+        ws = wb.active
+        # Week header + col headers + one data row should be bordered.
+        data_row = None
+        for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
+            if row[0].value == "CODE":
+                self.assertIsNotNone(row[0].border.left.style)
+            if row[1].value == "Active cell":
+                data_row = row
+        self.assertIsNotNone(data_row)
+        self.assertIsNotNone(data_row[0].border.left.style)
+        # MA (col 6) same width as FA (col 7)
+        self.assertEqual(
+            ws.column_dimensions["F"].width,
+            ws.column_dimensions["G"].width,
+        )
 
     def test_fill_from_scope_hierarchy(self):
         from cf_people.models import Member, SubBranch, Zone
@@ -602,6 +776,86 @@ class AttendanceExcelImportTests(OperationsFixturesMixin, TestCase):
         self.assertEqual(
             AttendanceRecord.objects.filter(event=result.event).count(), 1
         )
+
+
+class AttendanceGenerateReportViewTests(OperationsFixturesMixin, TestCase):
+    def test_scope_fields_are_autocomplete(self):
+        from django.urls import reverse
+
+        self.user.is_staff = True
+        self.user.is_superuser = True
+        self.user.save()
+        self.client.force_login(self.user)
+        url = reverse("admin:cf_operations_attendancerecord_generate_report")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "admin-autocomplete")
+        self.assertContains(response, 'name="organization"')
+        self.assertContains(response, 'name="branch"')
+        self.assertContains(response, 'name="zone"')
+        self.assertContains(response, 'name="subgroup"')
+        self.assertContains(response, "admin/js/autocomplete.js")
+
+    def test_generated_sheet_uses_branch_leader_and_header_lines(self):
+        from django.urls import reverse
+
+        from cf_people.models import Member, Zone
+
+        self.user.is_staff = True
+        self.user.is_superuser = True
+        self.user.save()
+        self.org.leader = Member.objects.create(
+            branch=self.branch,
+            organization=self.org,
+            user=self.user,
+            membership_status="ACTIVE",
+        )
+        self.org.save(update_fields=["leader"])
+        self.branch.leader = self.org.leader
+        self.branch.save(update_fields=["leader"])
+        zone = Zone.objects.create(branch=self.branch, name="ZONE 13", code="Z13")
+        event = Event.objects.create(
+            branch=self.branch, title="Sunday", event_type="SERVICE"
+        )
+        rec = AttendanceRecord.objects.create(
+            event=event,
+            branch=self.branch,
+            zone=zone,
+            week=1,
+            leader="Row Host",
+            centre_name="Cell A",
+        )
+        AttendanceSeat.objects.create(record=rec, male_adults=2, female_adults=2)
+
+        self.client.force_login(self.user)
+        url = reverse("admin:cf_operations_attendancerecord_generate_report")
+        response = self.client.get(url, {"branch": str(self.branch.pk)})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.org.name)
+        self.assertContains(response, self.branch.name)
+        self.assertNotContains(response, "sheet-header-line sheet-zone")
+        self.assertContains(response, "LEADER NAME:")
+        self.assertContains(response, str(self.branch.leader))
+        self.assertContains(response, "Row Host")
+        self.assertContains(response, 'class="label-cell">GRAND TOTAL')
+        self.assertNotContains(response, "label-cell sheet-align-left")
+
+        zonal = self.client.get(url, {"zone": str(zone.pk)})
+        self.assertContains(zonal, "sheet-header-line sheet-zone")
+        self.assertContains(zonal, self.branch.name)
+
+    def test_changelist_filters_use_autocomplete(self):
+        from django.urls import reverse
+
+        self.user.is_staff = True
+        self.user.is_superuser = True
+        self.user.save()
+        self.client.force_login(self.user)
+        url = reverse("admin:cf_operations_attendancerecord_changelist")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "admin-autocomplete")
+        self.assertContains(response, "cf-select2")
 
 
 class PortalExploreViewTests(OperationsFixturesMixin, TestCase):

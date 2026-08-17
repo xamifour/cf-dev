@@ -1,0 +1,22 @@
+{% load i18n %}
+{# Dropdown filter — replaces Django’s list of links #}
+<div class="cf-filter-select" data-filter-title="{{ title }}">
+  <label class="cf-filter-select-label" for="cf-filter-{{ title|slugify }}">
+    {% blocktranslate with filter_title=title %}By {{ filter_title }}{% endblocktranslate %}
+  </label>
+  <select
+    id="cf-filter-{{ title|slugify }}"
+    class="cf-filter-select-control"
+    data-cf-filter-select
+    aria-label="{% blocktranslate with filter_title=title %}Filter by {{ filter_title }}{% endblocktranslate %}"
+  >
+    {% for choice in choices %}
+    <option
+      value="{{ choice.query_string|iriencode }}"
+      {% if choice.selected %}selected{% endif %}
+    >
+      {{ choice.display }}
+    </option>
+    {% endfor %}
+  </select>
+</div>

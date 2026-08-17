@@ -1,0 +1,32 @@
+{% load i18n %}
+{# Django admin AutocompleteSelect protocol (Select2 + /admin/autocomplete/) #}
+{% with cfg=spec.autocomplete_config %}
+<div class="cf-filter-select cf-filter-autocomplete" data-filter-title="{{ title }}">
+  <label class="cf-filter-select-label" for="cf-ac-{{ title|slugify }}">
+    {% blocktranslate with filter_title=title %}By {{ filter_title }}{% endblocktranslate %}
+  </label>
+  <select
+    id="cf-ac-{{ title|slugify }}"
+    class="admin-autocomplete"
+    data-ajax--cache="true"
+    data-ajax--delay="250"
+    data-ajax--type="GET"
+    data-ajax--url="{% url 'admin:autocomplete' %}"
+    data-app-label="{{ cfg.app_label }}"
+    data-model-name="{{ cfg.model_name }}"
+    data-field-name="{{ cfg.field_name }}"
+    data-theme="admin-autocomplete"
+    data-allow-clear="true"
+    data-placeholder="{% blocktranslate with filter_title=title %}All {{ filter_title }}{% endblocktranslate %}"
+    data-cf-ac-filter
+    data-cf-ac-param="{{ cfg.param }}"
+    data-cf-ac-remove="{{ cfg.remove }}"
+    aria-label="{% blocktranslate with filter_title=title %}Filter by {{ filter_title }}{% endblocktranslate %}"
+  >
+    <option value=""></option>
+    {% if cfg.selected_pk %}
+    <option value="{{ cfg.selected_pk }}" selected>{{ cfg.selected_label }}</option>
+    {% endif %}
+  </select>
+</div>
+{% endwith %}

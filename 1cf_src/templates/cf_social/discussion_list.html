@@ -1,0 +1,66 @@
+{% extends "cf_social/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="s-layout">
+  <section class="s-col-main">
+    <div class="s-card s-discussion-head">
+      <div class="s-discussion-head-row">
+        <h1 class="s-h1">{% trans "Discussions" %}</h1>
+        <a class="s-btn s-btn-primary" href="{% url 'cf_social:discussion_create' %}">{% trans "New discussion" %}</a>
+      </div>
+      <p class="s-meta">{% trans "Open conversations for the whole platform, an organisation, a branch, or a zone." %}</p>
+    </div>
+
+    {% if discussions %}
+    <ul class="s-discussion-list">
+      {% for d in discussions %}
+      <li class="s-card s-discussion-item">
+        <a class="s-discussion-title" href="{% url 'cf_social:discussion_detail' pk=d.pk %}">{{ d.title }}</a>
+        <div class="s-meta">
+          <span class="s-pill">{{ d.get_audience_display }}</span>
+          {% if d.audience != "PLATFORM" %}
+          <span>· {{ d.audience_label }}</span>
+          {% endif %}
+          <span>· {{ d.messages_count }} {% trans "replies" %}</span>
+          {% if d.is_locked %}<span class="s-pill s-pill-warn">{% trans "Locked" %}</span>{% endif %}
+        </div>
+        {% if d.body %}
+        <p class="s-snippet">{{ d.body|truncatechars:160 }}</p>
+        {% endif %}
+        <div class="s-meta">
+          {% if d.created_by %}
+          {% trans "Started by" %}
+          <a href="{% url 'cf_social:profile' username=d.created_by.username %}">
+            {% if d.created_by.social_profile %}{{ d.created_by.social_profile.get_display_name }}{% else %}{{ d.created_by.username }}{% endif %}
+          </a>
+          ·
+          {% endif %}
+          {{ d.created_at|timesince }} {% trans "ago" %}
+          {% if d.last_message_at %}
+          · {% trans "Active" %} {{ d.last_message_at|timesince }} {% trans "ago" %}
+          {% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% if page_obj.has_other_pages %}
+    <div class="s-pagination">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}">{% trans "Previous" %}</a>
+      {% endif %}
+      <span>{% blocktrans with n=page_obj.number t=page_obj.paginator.num_pages %}Page {{ n }} of {{ t }}{% endblocktrans %}</span>
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}">{% trans "Next" %}</a>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="s-card">
+      <p>{% trans "No discussions yet. Start one for your branch or the whole platform." %}</p>
+      <a class="s-btn s-btn-primary" href="{% url 'cf_social:discussion_create' %}">{% trans "New discussion" %}</a>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

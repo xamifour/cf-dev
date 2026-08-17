@@ -1,0 +1,83 @@
+{% extends "cf_social/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="s-layout">
+  <section class="s-col-main">
+    <div class="s-tabs">
+      <a href="{% url 'cf_social:feed' %}" class="{% if active_tab != 'following' %}is-active{% endif %}">{% trans "For you" %}</a>
+      <a href="{% url 'cf_social:feed' %}?tab=following" class="{% if active_tab == 'following' %}is-active{% endif %}">{% trans "Following" %}</a>
+    </div>
+
+    <div class="s-card s-composer">
+      <h2 class="s-h2">{% trans "Create a post" %}</h2>
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {% if post_form.errors %}
+        <div class="s-error" role="alert">
+          {% for field, errors in post_form.errors.items %}
+            {% for error in errors %}<div>{{ error }}</div>{% endfor %}
+          {% endfor %}
+        </div>
+        {% endif %}
+        {{ post_form.body }}
+        <div class="s-composer-row">
+          <label class="s-file">
+            <span>{% trans "Image" %}</span>
+            {{ post_form.image }}
+          </label>
+          <label class="s-file">
+            <span>{% trans "Video" %}</span>
+            {{ post_form.video }}
+          </label>
+          <label class="s-file">
+            <span>{% trans "Who can see this?" %}</span>
+            {{ post_form.visibility }}
+          </label>
+          <button type="submit" class="s-btn s-btn-primary">{% trans "Post" %}</button>
+        </div>
+        <p class="s-meta" style="margin:0.5rem 0 0">
+          {% trans "Audience: Public = everyone · Followers only · Private = only you" %}
+        </p>
+      </form>
+    </div>
+
+    {% for post in posts %}
+      {% include "cf_social/_post_card.html" with post=post %}
+    {% empty %}
+    <div class="s-empty">
+      <h3>{% trans "Your feed is quiet" %}</h3>
+      <p>{% trans "Follow people or publish your first post." %}</p>
+    </div>
+    {% endfor %}
+
+    {% if page_obj.has_other_pages %}
+    <nav class="s-pagination">
+      {% if page_obj.has_previous %}
+      <a class="s-btn s-btn-ghost" href="?page={{ page_obj.previous_page_number }}{% if active_tab == 'following' %}&tab=following{% endif %}">{% trans "Previous" %}</a>
+      {% endif %}
+      <span>{% blocktrans with n=page_obj.number t=page_obj.paginator.num_pages %}Page {{ n }} of {{ t }}{% endblocktrans %}</span>
+      {% if page_obj.has_next %}
+      <a class="s-btn s-btn-ghost" href="?page={{ page_obj.next_page_number }}{% if active_tab == 'following' %}&tab=following{% endif %}">{% trans "Next" %}</a>
+      {% endif %}
+    </nav>
+    {% endif %}
+  </section>
+
+  <aside class="s-col-side">
+    <div class="s-card">
+      <h3>{% trans "Your profile" %}</h3>
+      <p class="s-meta" style="margin:0.25rem 0 0.75rem">
+        <a href="{% url 'cf_social:profile' username=request.user.username %}">@{{ request.user.username }}</a>
+      </p>
+      <a class="s-btn s-btn-ghost s-btn-block" href="{% url 'cf_social:profile_edit' %}">{% trans "Edit profile" %}</a>
+      <a class="s-btn s-btn-ghost s-btn-block" href="{% url 'cf_social:discussion_list' %}">{% trans "Discussions" %}</a>
+    </div>
+    <div class="s-card">
+      <h3>{% trans "Discover" %}</h3>
+      <p class="s-muted">{% trans "Find friends and conversations across the platform." %}</p>
+      <a class="s-btn s-btn-primary s-btn-block" href="{% url 'cf_social:search' %}">{% trans "Find people" %}</a>
+    </div>
+  </aside>
+</div>
+{% endblock %}

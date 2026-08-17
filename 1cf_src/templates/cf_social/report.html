@@ -1,0 +1,20 @@
+{% extends "cf_social/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="s-layout s-layout-narrow">
+  <div class="s-card">
+    <h1 class="s-h1">{% trans "Report content" %}</h1>
+    <form method="post" class="s-form">
+      {% csrf_token %}
+      <input type="hidden" name="target_type" value="{{ target_type }}">
+      <input type="hidden" name="target_id" value="{{ target_id }}">
+      <div class="s-field">
+        <label>{% trans "Reason" %}</label>
+        {{ form.reason }}
+        {{ form.reason.errors }}
+      </div>
+      <button type="submit" class="s-btn s-btn-primary">{% trans "Submit report" %}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

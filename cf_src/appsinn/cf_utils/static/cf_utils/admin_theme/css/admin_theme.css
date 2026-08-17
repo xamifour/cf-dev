@@ -9,7 +9,7 @@
  */
 
 /* ── Palette & tokens (light) ─────────────────────────────────────────── */
-html[data-theme="light"],
+html[data-cf-scheme="light"],
 :root {
   --cf-bg-0: #f4f7fc;
   --cf-bg-1: #e8eef8;
@@ -56,7 +56,7 @@ html[data-theme="light"],
 }
 
 /* ── Palette (dark) ───────────────────────────────────────────────────── */
-html[data-theme="dark"] {
+html[data-cf-scheme="dark"] {
   --cf-bg-0: #060a12;
   --cf-bg-1: #0b1220;
   --cf-bg-2: #111827;
@@ -397,7 +397,7 @@ body.cf-admin-theme {
   --cf-nav-border: rgba(148, 163, 184, 0.16);
 }
 
-html[data-theme="light"] body.cf-admin-theme {
+html[data-cf-scheme="light"] body.cf-admin-theme {
   --cf-nav-bg: #f8fafc;
   --cf-nav-fg: #0f172a;
   --cf-nav-muted: #475569;
@@ -1299,6 +1299,11 @@ body.cf-admin-theme #changelist-filter details > ul {
 
 /* ── Attendance generate-report page ─────────────────────────────────── */
 body.cf-admin-theme .cf-report-page {
+  max-width: none;
+}
+
+body.cf-admin-theme .cf-report-hero,
+body.cf-admin-theme .cf-report-form {
   max-width: 72rem;
 }
 
@@ -1337,7 +1342,7 @@ body.cf-admin-theme .cf-report-panel {
   background: var(--cf-glass);
   backdrop-filter: blur(10px);
   box-shadow: 0 12px 32px rgba(2, 6, 23, 0.08);
-  overflow: hidden;
+  overflow: visible;
 }
 
 body.cf-admin-theme .cf-report-panel-head {
@@ -1395,7 +1400,8 @@ body.cf-admin-theme .cf-report-field label {
 
 body.cf-admin-theme .cf-report-field select,
 body.cf-admin-theme .cf-report-field input[type="text"],
-body.cf-admin-theme .cf-report-field input[type="date"] {
+body.cf-admin-theme .cf-report-field input[type="date"],
+body.cf-admin-theme .cf-report-field .cf-combo-input {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -1408,10 +1414,27 @@ body.cf-admin-theme .cf-report-field input[type="date"] {
 }
 
 body.cf-admin-theme .cf-report-field select:focus,
-body.cf-admin-theme .cf-report-field input:focus {
+body.cf-admin-theme .cf-report-field input:focus,
+body.cf-admin-theme .cf-report-field .cf-combo-input:focus {
   outline: none;
   border-color: var(--cf-accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--cf-accent) 28%, transparent);
+}
+
+body.cf-admin-theme .cf-combo-list {
+  background: var(--body-bg);
+  color: var(--body-fg);
+  border-color: var(--border-color);
+}
+
+body.cf-admin-theme .cf-combo-option {
+  color: var(--body-fg);
+}
+
+body.cf-admin-theme .cf-combo-option:hover,
+body.cf-admin-theme .cf-combo-option.is-active {
+  background: color-mix(in srgb, var(--cf-accent) 18%, var(--body-bg));
+  color: var(--body-fg);
 }
 
 body.cf-admin-theme .cf-report-field .help {
@@ -1587,11 +1610,11 @@ body.cf-admin-theme .cf-nav-brand-sub {
   }
 }
 
-html[data-theme="light"] body.cf-admin-theme .cf-nav-brand {
+html[data-cf-scheme="light"] body.cf-admin-theme .cf-nav-brand {
   background: linear-gradient(180deg, rgba(8, 145, 178, 0.08), transparent);
 }
 
-html[data-theme="light"] body.cf-admin-theme .cf-nav-brand-title {
+html[data-cf-scheme="light"] body.cf-admin-theme .cf-nav-brand-title {
   color: #0f172a;
 }
 
@@ -1651,7 +1674,7 @@ body.cf-admin-theme #menu.cf-menu {
     transform 0.2s ease;
 }
 
-html[data-theme="light"] body.cf-admin-theme #menu.cf-menu {
+html[data-cf-scheme="light"] body.cf-admin-theme #menu.cf-menu {
   background:
     radial-gradient(
       420px 220px at var(--cf-mx, 30%) var(--cf-my, 10%),
@@ -1698,8 +1721,8 @@ body.cf-admin-theme #menu #nav-filter {
   font-size: 0.85rem;
 }
 
-html[data-theme="light"] body.cf-admin-theme #menu .cf-menu-filter,
-html[data-theme="light"] body.cf-admin-theme #menu #nav-filter {
+html[data-cf-scheme="light"] body.cf-admin-theme #menu .cf-menu-filter,
+html[data-cf-scheme="light"] body.cf-admin-theme #menu #nav-filter {
   background: #fff;
   color: #0f172a;
   border-color: rgba(15, 23, 42, 0.12);
@@ -1727,8 +1750,8 @@ body.cf-admin-theme #menu .module > h2 {
   letter-spacing: 0.08em;
 }
 
-html[data-theme="light"] body.cf-admin-theme #menu .module caption,
-html[data-theme="light"] body.cf-admin-theme #menu .module > h2 {
+html[data-cf-scheme="light"] body.cf-admin-theme #menu .module caption,
+html[data-cf-scheme="light"] body.cf-admin-theme #menu .module > h2 {
   color: #0e7490 !important;
 }
 
@@ -1739,9 +1762,9 @@ body.cf-admin-theme #menu a:visited {
   text-decoration: none !important;
 }
 
-html[data-theme="light"] body.cf-admin-theme #menu a,
-html[data-theme="light"] body.cf-admin-theme #menu a:link,
-html[data-theme="light"] body.cf-admin-theme #menu a:visited {
+html[data-cf-scheme="light"] body.cf-admin-theme #menu a,
+html[data-cf-scheme="light"] body.cf-admin-theme #menu a:link,
+html[data-cf-scheme="light"] body.cf-admin-theme #menu a:visited {
   color: #0f172a !important;
 }
 
@@ -1995,8 +2018,8 @@ body.cf-admin-theme #container.no-auth #menu {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root,
-html[data-theme="light"],
-html[data-theme="dark"] {
+html[data-cf-scheme="light"],
+html[data-cf-scheme="dark"] {
   --cf-page-gutter: 0.25rem;
   --cf-topbar-h: 3.5rem;
 }
@@ -2188,6 +2211,27 @@ body.cf-admin-theme .cf-import-panels {
     grid-template-columns: 1fr 1fr;
   }
 }
+/* Date/time popups are appended to <body>; keep them above the themed shell. */
+body.cf-admin-theme .calendarbox,
+body.cf-admin-theme .clockbox {
+  position: absolute !important;
+  z-index: 10050 !important;
+  overflow: visible !important;
+  background: var(--body-bg, #ffffff) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  color: var(--body-fg, #0f172a) !important;
+}
+
+body.cf-admin-theme .calendarbox > h2,
+body.cf-admin-theme .calendarbox h2 {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  text-transform: none !important;
+  font-size: 0.85rem !important;
+  letter-spacing: 0 !important;
+}
+
 body.cf-admin-theme .cf-file-input {
   display: block;
   width: 100%;
@@ -2198,4 +2242,43 @@ body.cf-admin-theme .cf-file-input {
   border: 1px dashed var(--border-color);
   background: var(--body-bg);
   color: var(--body-fg);
+}
+
+/* Django Select2 / autocomplete — filter bar + custom pages */
+body.cf-admin-theme .cf-filter-select .select2-container,
+body.cf-admin-theme .cf-report-field .select2-container {
+  width: 100% !important;
+  max-width: 100%;
+}
+
+body.cf-admin-theme .cf-filter-select .select2-container--admin-autocomplete
+  .select2-selection--single {
+  min-height: 2.1rem;
+  height: auto;
+}
+
+body.cf-admin-theme .select2-container--admin-autocomplete
+  .select2-selection--single,
+body.cf-admin-theme .select2-container--admin-autocomplete
+  .select2-selection--single .select2-selection__rendered {
+  color: var(--body-fg);
+}
+
+body.cf-admin-theme .select2-dropdown {
+  background: var(--body-bg);
+  color: var(--body-fg);
+  border-color: var(--border-color);
+  z-index: 2000;
+}
+
+body.cf-admin-theme .select2-container--admin-autocomplete
+  .select2-results__option--highlighted[aria-selected] {
+  background: var(--selected-bg);
+  color: var(--body-fg);
+}
+
+body.cf-admin-theme .cf-filter-autocomplete {
+  min-width: 12rem;
+  max-width: 16rem;
+  width: 14rem;
 }

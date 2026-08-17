@@ -1,0 +1,22 @@
+{# cf-dev/cf_src/templates/cf_communications/email_template.html #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ subject }}</title>
+</head>
+<body style="font-family: system-ui, -apple-system, sans-serif; color: #1f1f1f; line-height: 1.5;">
+  {% if logo_url %}
+  <p><img src="{{ logo_url }}" alt="CF" style="max-height: 48px;"></p>
+  {% endif %}
+  <h1 style="font-size: 1.25rem;">{{ subject }}</h1>
+  <div>{{ message|safe }}</div>
+  {% if call_to_action_url and call_to_action_text %}
+  <p style="margin-top: 1.5rem;">
+    <a href="{{ call_to_action_url }}" style="display:inline-block;padding:0.65rem 1rem;background:#0056d2;color:#fff;text-decoration:none;border-radius:4px;">
+      {{ call_to_action_text }}
+    </a>
+  </p>
+  {% endif %}
+</body>
+</html>

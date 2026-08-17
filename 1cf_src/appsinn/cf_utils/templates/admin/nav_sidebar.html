@@ -1,0 +1,32 @@
+{% load i18n static %}
+<button class="sticky toggle-nav-sidebar" id="toggle-nav-sidebar" aria-label="{% translate 'Toggle navigation' %}"></button>
+<nav class="sticky cf-nav-sidebar" id="nav-sidebar" aria-label="{% translate 'Sidebar' %}">
+  <div class="cf-nav-brand">
+    <a href="{% url 'admin:index' %}" class="cf-nav-brand-link">
+      {% if active_organization.logo %}
+        <img class="cf-nav-logo" src="{{ active_organization.logo.url }}" alt="{{ active_organization }}">
+      {% elif user_organization.logo %}
+        <img class="cf-nav-logo" src="{{ user_organization.logo.url }}" alt="{{ user_organization }}">
+      {% else %}
+        <span class="cf-brand-mark cf-nav-mark" aria-hidden="true"></span>
+      {% endif %}
+      <span class="cf-nav-brand-text">
+        <span class="cf-nav-brand-title">
+          {% if active_organization %}
+            {{ active_organization.trade_name|default:active_organization.name }}
+          {% elif user_organization %}
+            {{ user_organization.trade_name|default:user_organization.name }}
+          {% else %}
+            {{ site_header|default:_('CF Church Administration') }}
+          {% endif %}
+        </span>
+        <span class="cf-nav-brand-sub">{% translate "Operations console" %}</span>
+      </span>
+    </a>
+  </div>
+
+  <input type="search" id="nav-filter"
+         placeholder="{% translate 'Start typing to filter…' %}"
+         aria-label="{% translate 'Filter navigation items' %}">
+  {% include "admin/app_list.html" with app_list=available_apps show_changelinks=False %}
+</nav>

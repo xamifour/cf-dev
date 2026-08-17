@@ -1,0 +1,66 @@
+{% extends "cf_social/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="s-layout">
+  <section class="s-col-main">
+    <p class="s-meta"><a href="{% url 'cf_social:discussion_list' %}">← {% trans "All discussions" %}</a></p>
+
+    <article class="s-card">
+      <h1 class="s-h1">{{ discussion.title }}</h1>
+      <div class="s-meta">
+        <span class="s-pill">{{ discussion.get_audience_display }}</span>
+        {% if discussion.audience != "PLATFORM" %}
+        <span>· {{ discussion.audience_label }}</span>
+        {% endif %}
+        {% if discussion.is_locked %}<span class="s-pill s-pill-warn">{% trans "Locked" %}</span>{% endif %}
+        · {{ discussion.messages_count }} {% trans "replies" %}
+      </div>
+      {% if discussion.body %}
+      <div class="s-discussion-body">{{ discussion.body|linebreaksbr }}</div>
+      {% endif %}
+      <div class="s-meta">
+        {% if discussion.created_by %}
+        {% trans "Started by" %}
+        <a href="{% url 'cf_social:profile' username=discussion.created_by.username %}">
+          {% if discussion.created_by.social_profile %}{{ discussion.created_by.social_profile.get_display_name }}{% else %}{{ discussion.created_by.username }}{% endif %}
+        </a>
+        ·
+        {% endif %}
+        {{ discussion.created_at }}
+      </div>
+    </article>
+
+    <div class="s-discussion-thread">
+      {% for msg in message_list %}
+      <div class="s-card s-discussion-msg">
+        <div class="s-meta">
+          <a href="{% url 'cf_social:profile' username=msg.author.username %}">
+            {% if msg.author.social_profile %}{{ msg.author.social_profile.get_display_name }}{% else %}{{ msg.author.username }}{% endif %}
+          </a>
+          · {{ msg.created_at|timesince }} {% trans "ago" %}
+        </div>
+        <p>{{ msg.body|linebreaksbr }}</p>
+      </div>
+      {% empty %}
+      <div class="s-card s-meta">{% trans "No replies yet. Be the first to respond." %}</div>
+      {% endfor %}
+    </div>
+
+    {% if can_post and form %}
+    <div class="s-card">
+      <h2 class="s-h2">{% trans "Reply" %}</h2>
+      <form method="post" class="s-form">
+        {% csrf_token %}
+        {{ form.body }}
+        <div class="s-composer-row" style="margin-top:0.75rem">
+          <button type="submit" class="s-btn s-btn-primary">{% trans "Post reply" %}</button>
+        </div>
+      </form>
+    </div>
+    {% elif discussion.is_locked %}
+    <div class="s-card s-meta">{% trans "This discussion is locked. No new replies." %}</div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

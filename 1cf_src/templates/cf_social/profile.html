@@ -1,0 +1,70 @@
+{% extends "cf_social/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="s-profile">
+  <div class="s-cover">
+    {% if profile.cover %}<img src="{{ profile.cover.url }}" alt="">{% endif %}
+  </div>
+  <div class="s-profile-main s-card">
+    <div class="s-profile-row">
+      <div class="s-avatar s-avatar-lg">
+        {% if profile.avatar %}<img src="{{ profile.avatar.url }}" alt="">{% else %}<span>{{ profile_user.first_name|default:profile_user.username|slice:":1"|upper }}</span>{% endif %}
+      </div>
+      <div class="s-profile-info">
+        <h1>{{ profile.get_display_name }}</h1>
+        <p class="s-meta">@{{ profile_user.username }}{% if profile.location %} · {{ profile.location }}{% endif %}</p>
+        {% if profile.bio %}<p class="s-bio">{{ profile.bio|linebreaksbr }}</p>{% endif %}
+        {% if profile.website %}<p><a href="{{ profile.website }}" rel="noopener" target="_blank">{{ profile.website }}</a></p>{% endif %}
+        <p class="s-counts">
+          <strong>{{ followers_count }}</strong> {% trans "followers" %} ·
+          <strong>{{ following_count }}</strong> {% trans "following" %}
+        </p>
+      </div>
+      <div class="s-profile-actions">
+        {% if is_own %}
+        <a class="s-btn s-btn-primary" href="{% url 'cf_social:profile_edit' %}">{% trans "Edit profile" %}</a>
+        {% else %}
+          {% if not is_blocked %}
+          <form method="post" action="{% url 'cf_social:follow_toggle' username=profile_user.username %}">
+            {% csrf_token %}
+            {% if is_following %}
+            <input type="hidden" name="action" value="unfollow">
+            <button class="s-btn s-btn-following" type="submit" title="{% trans 'Unfollow' %}">
+              <span class="s-btn-label-main">{% trans "Following" %}</span>
+              <span class="s-btn-label-alt">{% trans "Unfollow" %}</span>
+            </button>
+            {% else %}
+            <input type="hidden" name="action" value="follow">
+            <button class="s-btn s-btn-primary" type="submit">{% trans "Follow" %}</button>
+            {% endif %}
+          </form>
+          <form method="post" action="{% url 'cf_social:start_message' username=profile_user.username %}">
+            {% csrf_token %}
+            <button class="s-btn s-btn-ghost" type="submit">{% trans "Message" %}</button>
+          </form>
+          {% endif %}
+          <form method="post" action="{% url 'cf_social:block_toggle' username=profile_user.username %}">
+            {% csrf_token %}
+            {% if is_blocked %}
+            <input type="hidden" name="action" value="unblock">
+            <button class="s-btn s-btn-ghost" type="submit">{% trans "Unblock" %}</button>
+            {% else %}
+            <input type="hidden" name="action" value="block">
+            <button class="s-btn s-btn-danger" type="submit">{% trans "Block" %}</button>
+            {% endif %}
+          </form>
+          <a class="s-btn s-btn-ghost s-btn-sm" href="{% url 'cf_social:report' %}?type=USER&id={{ profile_user.pk }}">{% trans "Report" %}</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <h2 class="s-h2">{% trans "Posts" %}</h2>
+  {% for post in posts %}
+    {% include "cf_social/_post_card.html" with post=post %}
+  {% empty %}
+  <div class="s-empty s-card"><p>{% trans "No posts yet." %}</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

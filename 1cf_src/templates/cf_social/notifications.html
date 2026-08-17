@@ -1,0 +1,21 @@
+{% extends "cf_social/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="s-layout s-layout-narrow">
+  <div class="s-card">
+    <h1 class="s-h1">{% trans "Notifications" %}</h1>
+    <ul class="s-notif-list">
+      {% for n in notifications %}
+      <li class="{% if not n.is_read %}is-unread{% endif %}">
+        {% if n.link %}<a href="{{ n.link }}">{% endif %}
+        <span>{{ n.message }}</span>
+        <span class="s-meta">{{ n.created_at|timesince }} {% trans "ago" %}</span>
+        {% if n.link %}</a>{% endif %}
+      </li>
+      {% empty %}
+      <li class="s-muted">{% trans "You're all caught up." %}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,179 @@
+{% load i18n %}
+{# Shared Excel-layout preview; expects attendance_sheet dict #}
+<div class="attendance-sheet-preview cf-sheet-paper">
+  <div class="sheet-toolbar">
+    <h2>{% trans "Attendance report" %} <span class="sheet-toolbar-sub">({% trans "from records" %})</span></h2>
+    <div class="sheet-toolbar-actions">
+      {% if attendance_sheet.filter_summary %}
+      <span class="sheet-chip">{{ attendance_sheet.filter_summary }}</span>
+      {% endif %}
+      {% if attendance_sheet.month_label %}
+      <span class="sheet-chip sheet-chip-month">{{ attendance_sheet.month_label }}</span>
+      {% endif %}
+      <span class="sheet-chip sheet-chip-muted">
+        {{ attendance_sheet.record_count|default:0 }} {% trans "records" %}
+        · {{ attendance_sheet.total_cells }} {% trans "rows" %}
+      </span>
+      {% if download_query is not None %}
+      <a class="button" href="?{% if download_query %}{{ download_query }}&amp;{% endif %}download=xlsx">{% trans "Download Excel" %}</a>
+      <a class="button" href="?{% if download_query %}{{ download_query }}&amp;{% endif %}download=pdf">{% trans "Download PDF" %}</a>
+      {% endif %}
+      <button type="button" class="button" onclick="window.print()">{% trans "Print" %}</button>
+    </div>
+  </div>
+
+  <div class="attendance-sheet-scroll">
+    <table class="attendance-sheet">
+      <thead>
+        <tr class="sheet-title-row">
+          <th colspan="45" class="sheet-header-line sheet-org sheet-align-left">
+            {{ attendance_sheet.organization_name|default:attendance_sheet.assembly_name }}
+          </th>
+        </tr>
+        {% if attendance_sheet.branch_name %}
+        <tr class="sheet-title-row">
+          <th colspan="45" class="sheet-header-line sheet-branch sheet-align-left">
+            {{ attendance_sheet.branch_name }}
+          </th>
+        </tr>
+        {% endif %}
+        {% if attendance_sheet.show_zone and attendance_sheet.zone_name %}
+        <tr class="sheet-title-row">
+          <th colspan="45" class="sheet-header-line sheet-zone sheet-align-left">
+            {{ attendance_sheet.zone_name }}
+          </th>
+        </tr>
+        {% endif %}
+        {% if attendance_sheet.show_subgroup and attendance_sheet.subgroup_name %}
+        <tr class="sheet-title-row">
+          <th colspan="45" class="sheet-header-line sheet-subgroup sheet-align-left">
+            {{ attendance_sheet.subgroup_name }}
+          </th>
+        </tr>
+        {% endif %}
+        {% if attendance_sheet.report_date %}
+        <tr class="sheet-title-row">
+          <th colspan="45" class="sheet-header-line sheet-date sheet-align-left">
+            {{ attendance_sheet.report_date }}
+          </th>
+        </tr>
+        {% endif %}
+        <tr class="sheet-week-header">
+          <th colspan="5" class="sheet-coord sheet-align-left">
+            {% trans "LEADER NAME:" %}
+            {{ attendance_sheet.leader_name|default:attendance_sheet.coordinator_name|default:"—" }}
+          </th>
+          {% for label in attendance_sheet.week_labels %}
+          <th colspan="8" class="week-label week-{{ forloop.counter }}">{{ label }}</th>
+          {% endfor %}
+        </tr>
+        <tr class="sheet-col-header">
+          <th>{% trans "CODE" %}</th>
+          <th>{% trans "CENTRE NAME" %}</th>
+          <th>{% trans "LEADER'S NAME" %}</th>
+          <th>{% trans "ADDRESS" %}</th>
+          <th>{% trans "CONTACT" %}</th>
+          {% for _ in attendance_sheet.week_labels %}
+          <th title="Male Adult">MA</th>
+          <th title="Female Adult">FA</th>
+          <th title="Male Children">MC</th>
+          <th title="Female Children">FC</th>
+          <th title="Total">T</th>
+          <th title="New Converts">N/C</th>
+          <th title="First Timers">F/T</th>
+          <th title="Testimonies">TS</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in attendance_sheet.rows %}
+        <tr class="{% cycle 'row-odd' 'row-even' %}">
+          <td class="num">{{ row.code }}</td>
+          <td class="text">{{ row.centre_name }}</td>
+          <td class="text">{{ row.leader_name }}</td>
+          <td class="text" title="{{ row.location_provider }}">{{ row.address }}</td>
+          <td class="text">{{ row.contact }}</td>
+          {% for week in row.weeks %}
+          <td class="num {% if not week.male_adults %}is-zero{% endif %}">{{ week.male_adults }}</td>
+          <td class="num {% if not week.female_adults %}is-zero{% endif %}">{{ week.female_adults }}</td>
+          <td class="num {% if not week.male_children %}is-zero{% endif %}">{{ week.male_children }}</td>
+          <td class="num {% if not week.female_children %}is-zero{% endif %}">{{ week.female_children }}</td>
+          <td class="num total-col {% if not week.total %}is-zero{% endif %}">{{ week.total }}</td>
+          <td class="num {% if not week.new_converts %}is-zero{% endif %}">{{ week.new_converts }}</td>
+          <td class="num {% if not week.first_timers %}is-zero{% endif %}">{{ week.first_timers }}</td>
+          <td class="num {% if not week.testimonies %}is-zero{% endif %}">{{ week.testimonies }}</td>
+          {% endfor %}
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="45" class="empty-hint">
+            {% trans "No attendance records match these filters." %}
+          </td>
+        </tr>
+        {% endfor %}
+
+        {% if attendance_sheet.rows %}
+        <tr class="totals-row">
+          <td colspan="5" class="label-cell">{% trans "TOTAL" %}</td>
+          {% for wt in attendance_sheet.week_totals %}
+          <td class="num">{{ wt.male_adults }}</td>
+          <td class="num">{{ wt.female_adults }}</td>
+          <td class="num">{{ wt.male_children }}</td>
+          <td class="num">{{ wt.female_children }}</td>
+          <td class="num total-col">{{ wt.total }}</td>
+          <td class="num">{{ wt.new_converts }}</td>
+          <td class="num">{{ wt.first_timers }}</td>
+          <td class="num">{{ wt.testimonies }}</td>
+          {% endfor %}
+        </tr>
+        <tr class="summary-row">
+          <td colspan="5" class="label-cell">{% trans "GRAND TOTAL" %}</td>
+          <td colspan="40" class="num grand sheet-summary-value">{{ attendance_sheet.grand.total }}</td>
+        </tr>
+        <tr class="summary-row">
+          <td colspan="5" class="label-cell">{% trans "AVERAGE" %}</td>
+          <td colspan="40" class="num sheet-summary-value">{{ attendance_sheet.average }}</td>
+        </tr>
+        <tr class="summary-row">
+          <td colspan="5" class="label-cell">{% trans "TOTAL CELLS" %}</td>
+          <td colspan="40" class="num sheet-summary-value">{{ attendance_sheet.total_cells }}</td>
+        </tr>
+        <tr class="summary-row">
+          <td colspan="5" class="label-cell">{% trans "ACTIVE CELLS" %}</td>
+          <td colspan="40" class="num sheet-summary-value">{{ attendance_sheet.active_cells }}</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="attendance-legend">
+    <strong>{% trans "Legend:" %}</strong>
+    <ul>
+      <li><span class="legend-swatch ma"></span> Male Adult (MA)</li>
+      <li><span class="legend-swatch fa"></span> Female Adult (FA)</li>
+      <li><span class="legend-swatch mc"></span> Male Children (MC)</li>
+      <li><span class="legend-swatch fc"></span> Female Children (FC)</li>
+      <li><span class="legend-swatch t"></span> Total (T)</li>
+      <li>N/C – New Converts</li>
+      <li>F/T – First Timers</li>
+      <li>Testimonies (TS)</li>
+    </ul>
+
+    <div class="cf-coordinator-signoff">
+      <h3>{% trans "ZONAL COORDINATOR" %}</h3>
+      <div class="cf-signoff-row">
+        <span class="cf-signoff-label">{% trans "Name" %}:</span>
+        <span class="cf-signoff-line"></span>
+      </div>
+      <div class="cf-signoff-row">
+        <span class="cf-signoff-label">{% trans "Signature" %}:</span>
+        <span class="cf-signoff-line"></span>
+      </div>
+      <div class="cf-signoff-row">
+        <span class="cf-signoff-label">{% trans "Date" %}:</span>
+        <span class="cf-signoff-line cf-signoff-line-short"></span>
+      </div>
+    </div>
+  </div>
+</div>

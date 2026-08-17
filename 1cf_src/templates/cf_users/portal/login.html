@@ -1,0 +1,78 @@
+{# cf-dev/cf_src/templates/cf_users/portal/login.html #}
+{% extends "cf_users/portal/base.html" %}
+{% load i18n static %}
+
+{% block body_class %}portal portal-login{% endblock %}
+
+{% block body %}
+<main class="login-shell">
+  <section class="login-hero" aria-hidden="true">
+    <div class="login-hero-inner">
+      <p class="eyebrow">{% trans "Organisation Management" %}</p>
+      <h1>{% trans "One platform for every branch, ministry, and network." %}</h1>
+      <p class="lede">
+        {% trans "Sign in to access data that belongs to your organisation — securely isolated across branches and regions." %}
+      </p>
+      <ul class="hero-points">
+        <li>{% trans "Multi-organisation, multi-branch access control" %}</li>
+        <li>{% trans "People, operations, and finance in one place" %}</li>
+        <li>{% trans "Enterprise authentication with username, email, or phone" %}</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="login-panel">
+    <div class="login-card">
+      <header class="login-card-header">
+        <div class="brand-mark" aria-hidden="true">CF</div>
+        <div>
+          <h2>{% trans "Organisation portal" %}</h2>
+          <p class="muted">{% trans "Sign in with your organisation account" %}</p>
+        </div>
+      </header>
+
+      <form method="post" action="{% url 'portal_login' %}" novalidate class="login-form">
+        {% csrf_token %}
+        {% if redirect_field_value %}
+        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+        {% endif %}
+
+        {% if form.non_field_errors %}
+        <div class="form-errors" role="alert">
+          {% for error in form.non_field_errors %}
+          <p>{{ error }}</p>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="field">
+          <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+          {{ form.username }}
+          {% if form.username.errors %}
+          <p class="field-error">{{ form.username.errors|striptags }}</p>
+          {% endif %}
+        </div>
+
+        <div class="field">
+          <label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+          {{ form.password }}
+          {% if form.password.errors %}
+          <p class="field-error">{{ form.password.errors|striptags }}</p>
+          {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">
+          {% trans "Sign in" %}
+        </button>
+      </form>
+
+      <footer class="login-card-footer">
+        <p class="muted small">
+          {% trans "Staff administrators use the operations console:" %}
+          <a href="{% url 'admin:login' %}">{% trans "Admin sign-in" %}</a>
+        </p>
+      </footer>
+    </div>
+  </section>
+</main>
+{% endblock %}

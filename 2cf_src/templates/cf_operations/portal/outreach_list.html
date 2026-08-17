@@ -1,0 +1,42 @@
+{% extends "cf_operations/portal/base_explore.html" %}
+{% load i18n %}
+
+{% block explore_title %}{% trans "Outreaches" %}{% endblock %}
+{% block explore_sub %}
+{% trans "Community mission and evangelism activities visible on the platform." %}
+{% endblock %}
+
+{% block explore_content %}
+{% if outreaches %}
+<div class="c-explore-grid">
+  {% for event in outreaches %}
+  <article class="c-topic-card c-topic-card-link">
+    <p class="c-card-partner">{{ event.branch.organization }} · {{ event.branch }}</p>
+    <h3><a href="{% url 'cf_operations:event_detail' event.pk %}">{{ event.title }}</a></h3>
+    <p>
+      {% if event.start_time %}{{ event.start_time|date:"D, j M Y · H:i" }}{% else %}{% trans "Date TBA" %}{% endif %}
+    </p>
+    <span class="c-topic-meta">
+      {% if event.visibility == "PUBLIC" %}{% trans "Public" %}{% else %}{% trans "Organisation only" %}{% endif %}
+    </span>
+  </article>
+  {% endfor %}
+</div>
+{% if page_obj.has_other_pages %}
+<nav class="c-pagination" aria-label="{% trans 'Pagination' %}">
+  {% if page_obj.has_previous %}
+  <a class="c-btn c-btn-secondary c-btn-sm" href="?page={{ page_obj.previous_page_number }}&q={{ search_q }}">{% trans "Previous" %}</a>
+  {% endif %}
+  <span class="muted">{% blocktrans with n=page_obj.number t=page_obj.paginator.num_pages %}Page {{ n }} of {{ t }}{% endblocktrans %}</span>
+  {% if page_obj.has_next %}
+  <a class="c-btn c-btn-secondary c-btn-sm" href="?page={{ page_obj.next_page_number }}&q={{ search_q }}">{% trans "Next" %}</a>
+  {% endif %}
+</nav>
+{% endif %}
+{% else %}
+<div class="c-empty">
+  <h3>{% trans "No outreaches found" %}</h3>
+  <p>{% trans "No public or organisation outreach events match your search." %}</p>
+</div>
+{% endif %}
+{% endblock %}
